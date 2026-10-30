@@ -4,4 +4,8 @@
 	<s:String x:Key="/Default/CodeInspection/GeneratedCode/GeneratedFileMasks/=Migrations_002F_002A/@EntryIndexedValue">Migrations/*</s:String>
 	<s:Boolean x:Key="/Default/CodeInspection/GeneratedCode/GeneratedFileMasks/=_002A_002EDesigner_002Ecs/@EntryIndexed">True</s:Boolean>
 	<s:Boolean x:Key="/Default/CodeInspection/GeneratedCode/GeneratedFileMasks/=Migrations_002F_002A/@EntryIndexed">True</s:Boolean>
+	<!-- Razor pages link to routes ("/permits"), not files; InspectCode resolves them against wwwroot and cannot know the router. -->
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=Html_002EPathError/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<!-- The compiler already fails the build on a missing XML comment (CS1591 with warnings as errors); InspectCode would repeat it for Razor component parameters. -->
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=CSharpWarnings_003A_003ACS1591/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 </wpf:ResourceDictionary>

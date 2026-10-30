@@ -6,6 +6,14 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Added
+- S3: the web site. Server-rendered Blazor pages for browsing and looking up permits, registering and signing in
+  (cookie sessions, anti-forgery on every post), the three-step application journey, the clerk, inspector and
+  administrator workspaces, and permit type management; shared form components with errors tied to fields; focus
+  management that leaves a first load alone and moves to the error summary after a refused post; 33 browser tests
+  covering whole journeys, keyboard use, reflow at 320px and 200% text.
+- S3: collecting rule checks (`PostalAddress.Check`, `PermitApplication.CheckDetails`) so a form lists every problem
+  at once; a shared registration service and rate limiting used by both hosts; a staff-only inspector list.
+- CI and CodeQL now run on push and pull request; Dependabot version updates are on.
 - S2: use cases for permit types, applications, inspections and the public lookup, behind the dispatcher, with store
   abstractions implemented in Infrastructure; bearer-token sign-in with Identity, four roles and policies; the REST
   endpoints with problem-details errors, per-address rate limits, OpenAPI with bearer security; a per-year permit
@@ -29,4 +37,4 @@ All notable changes are recorded here, newest first. The format follows
 - EF Core persistence with SQLite by default and SQL Server by configuration; ASP.NET Core Identity stores.
 - An accessible page shell: skip link, landmarks, focus on navigation, visible focus, reduced motion.
 - Build discipline: warnings as errors, central package management, vulnerability audit, a license audit script,
-  and CI and CodeQL workflows that run on demand until the repository is public.
+  and CI and CodeQL workflows.

@@ -44,6 +44,17 @@ public class PermitApplicationTests
     }
 
     [Fact]
+    public void Checking_the_details_lists_the_description_and_every_address_problem_together()
+    {
+        IReadOnlyList<RuleViolation> found = PermitApplication.CheckDetails("short", "", null, "", "", "123");
+
+        Assert.Equal(
+            ["application.description", "address.line1", "address.city", "address.region", "address.postal_code"],
+            found.Select(violation => violation.Code));
+        Assert.Empty(PermitApplication.CheckDetails("Build a covered porch at the back.", "100 Lantern Row", null, "Bramblewick", "TG", "70001"));
+    }
+
+    [Fact]
     public void A_project_description_that_is_too_long_is_refused()
     {
         DomainRuleException failure = Assert.Throws<DomainRuleException>(() => PermitApplication.CreateDraft(

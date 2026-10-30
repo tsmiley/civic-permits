@@ -1,0 +1,53 @@
+<div class="field@(Error is null ? "" : " field-has-error")">
+    <label for="@Id">@Label@if (Required) {<span class="required"> (required)</span>}</label>
+    @if (Hint is not null)
+    {
+        <p class="hint" id="@Id-hint">@Hint</p>
+    }
+    @if (Error is not null)
+    {
+        <p class="error-text" id="@Id-error"><span class="visually-hidden">Error: </span>@Error</p>
+    }
+    <textarea class="input" id="@Id" name="@(Name ?? Id)" rows="@Rows" required="@Required" maxlength="@MaxLength"
+              aria-describedby="@Described" aria-invalid="@(Error is null ? null : "true")">@Value</textarea>
+</div>
+
+@code {
+    /// <summary>The element id, also the target of links from the error summary.</summary>
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>The posted field name. Defaults to the id.</summary>
+    [Parameter]
+    public string? Name { get; set; }
+
+    /// <summary>The visible label.</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>Help shown under the label and read with the field.</summary>
+    [Parameter]
+    public string? Hint { get; set; }
+
+    /// <summary>What is wrong with the value, if anything.</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>The current value.</summary>
+    [Parameter]
+    public string? Value { get; set; }
+
+    /// <summary>Whether the field must be filled in.</summary>
+    [Parameter]
+    public bool Required { get; set; }
+
+    /// <summary>The visible number of lines.</summary>
+    [Parameter]
+    public int Rows { get; set; } = 4;
+
+    /// <summary>The longest value, if limited.</summary>
+    [Parameter]
+    public int? MaxLength { get; set; }
+
+    private string? Described => string.Join(' ', new[] { Hint is null ? null : Id + "-hint", Error is null ? null : Id + "-error" }.Where(id => id is not null)) is { Length: > 0 } ids ? ids : null;
+}

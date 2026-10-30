@@ -1,8 +1,12 @@
 name: CodeQL
 
-# Runs by hand while the repository is private. At publication it gains push, pull_request and a weekly
-# schedule; CodeQL is free on public repositories.
+# CodeQL is free on public repositories: it runs on every push to main, every pull request, and weekly.
 on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
   workflow_dispatch:
 
 permissions:

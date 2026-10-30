@@ -199,3 +199,8 @@ public sealed record PublicPermitStatusResponse(
     string Status,
     DateTimeOffset? IssuedOn,
     DateOnly? ExpiresOn);
+
+/// <summary>A person who can be given an inspection.</summary>
+/// <param name="Id">The person's identifier.</param>
+/// <param name="DisplayName">The name shown in lists.</param>
+public sealed record InspectorResponse(Guid Id, string DisplayName);

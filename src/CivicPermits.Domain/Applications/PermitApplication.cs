@@ -321,14 +321,36 @@ public sealed class PermitApplication
         return inspection;
     }
 
+    /// <summary>
+    /// Finds every rule the entered details break, not just the first, so a form can list them all at once. The
+    /// methods that create or change an application apply the same rules.
+    /// </summary>
+    public static IReadOnlyList<RuleViolation> CheckDetails(string? projectDescription, string? line1, string? line2, string? city, string? region, string? postalCode)
+    {
+        List<RuleViolation> found = [];
+
+        if (!DescriptionIsValid(projectDescription?.Trim() ?? string.Empty))
+        {
+            found.Add(DescriptionViolation);
+        }
+
+        found.AddRange(PostalAddress.Check(line1, line2, city, region, postalCode));
+
+        return found;
+    }
+
+    private static RuleViolation DescriptionViolation { get; } = new(
+        "application.description",
+        $"Describe the project in {MinimumDescriptionLength} to {MaximumDescriptionLength:N0} characters.");
+
+    private static bool DescriptionIsValid(string description) =>
+        description.Length is >= MinimumDescriptionLength and <= MaximumDescriptionLength;
+
     private void SetDetails(string? projectDescription, PostalAddress siteAddress, Money declaredValuation)
     {
         string description = projectDescription?.Trim() ?? string.Empty;
 
-        DomainRuleException.Require(
-            description.Length is >= MinimumDescriptionLength and <= MaximumDescriptionLength,
-            "application.description",
-            $"Describe the project in {MinimumDescriptionLength} to {MaximumDescriptionLength:N0} characters.");
+        DomainRuleException.Require(DescriptionIsValid(description), DescriptionViolation.Code, DescriptionViolation.Message);
 
         ProjectDescription = description;
         SiteAddress = siteAddress;

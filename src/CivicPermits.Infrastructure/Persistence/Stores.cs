@@ -178,4 +178,14 @@ internal sealed class UserDirectory(UserManager<ApplicationUser> users) : IUserD
 
         return person is not null && await users.IsInRoleAsync(person, nameof(ActorRole.Inspector));
     }
+
+    public async Task<IReadOnlyList<InspectorResponse>> ListInspectorsAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        IList<ApplicationUser> inspectors = await users.GetUsersInRoleAsync(nameof(ActorRole.Inspector));
+
+        return [.. inspectors
+            .OrderBy(person => person.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+            .Select(person => new InspectorResponse(person.Id, person.DisplayName))];
+    }
 }

@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IPermitNumberAllocator, PermitNumberAllocator>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<IdentityBootstrapper>();
+        services.AddScoped<RegistrationService>();
 
         services
             .AddHealthChecks()

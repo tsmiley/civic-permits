@@ -1,7 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using CivicPermits.Api.Security;
 using CivicPermits.Application.Abstractions;
 using CivicPermits.Domain.Applications;
+using CivicPermits.Infrastructure.Hosting;
+using CivicPermits.Infrastructure.Identity;
 using CivicPermits.Infrastructure.Persistence;
 using CivicPermits.Shared.Contracts;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -55,51 +56,13 @@ internal static class AuthEndpoints
         return group;
     }
 
-    private static async Task<IResult> RegisterAsync(RegisterRequest? request, UserManager<ApplicationUser> users)
+    private static async Task<IResult> RegisterAsync(RegisterRequest? request, RegistrationService registration)
     {
-        Dictionary<string, string[]> errors = [];
+        RegistrationOutcome outcome = await registration.RegisterApplicantAsync(request?.Email, request?.Password, request?.DisplayName);
 
-        string email = request?.Email?.Trim() ?? string.Empty;
-        string name = request?.DisplayName?.Trim() ?? string.Empty;
-
-        if (email.Length is 0 or > 256 || !new EmailAddressAttribute().IsValid(email))
-        {
-            errors["email"] = ["Enter a valid email address."];
-        }
-
-        if (name.Length is < 2 or > 80)
-        {
-            errors["displayName"] = ["Enter your name (2 to 80 characters)."];
-        }
-
-        if (string.IsNullOrEmpty(request?.Password))
-        {
-            errors["password"] = ["Enter a password."];
-        }
-
-        if (errors.Count > 0)
-        {
-            return ValidationFailed(errors);
-        }
-
-        ApplicationUser person = new() { Id = Guid.CreateVersion7(), UserName = email, Email = email, DisplayName = name };
-        IdentityResult created = await users.CreateAsync(person, request!.Password!);
-
-        if (!created.Succeeded)
-        {
-            // A taken address is answered exactly like a new one. Anything else is the person's to fix.
-            string[] fixable = [.. created.Errors
-                .Where(error => !error.Code.StartsWith("Duplicate", StringComparison.Ordinal))
-                .Select(error => error.Description)];
-
-            return fixable.Length == 0
-                ? TypedResults.Accepted((string?)null)
-                : ValidationFailed(new Dictionary<string, string[]> { ["password"] = fixable });
-        }
-
-        await users.AddToRoleAsync(person, nameof(ActorRole.Applicant));
-
-        return TypedResults.Accepted((string?)null);
+        return outcome.Accepted
+            ? TypedResults.Accepted((string?)null)
+            : ValidationFailed(outcome.Errors.ToDictionary(pair => pair.Key, pair => pair.Value));
     }
 
     private static async Task<IResult> LoginAsync(LoginRequest? request, SignInManager<ApplicationUser> signIn)

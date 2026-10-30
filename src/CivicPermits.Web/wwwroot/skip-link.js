@@ -7,7 +7,7 @@ document.addEventListener('click', (event) => {
     return;
   }
 
-  const target = document.getElementById(link.getAttribute('href').slice(1));
+  const target = document.getElementById(link.hash.slice(1));
   if (!target) {
     return;
   }

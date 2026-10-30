@@ -2,6 +2,7 @@ using CivicPermits.Api.Security;
 using CivicPermits.Application.Messaging;
 using CivicPermits.Application.Permits;
 using CivicPermits.Domain.Applications;
+using CivicPermits.Infrastructure.Hosting;
 using CivicPermits.Shared.Contracts;
 
 namespace CivicPermits.Api.Endpoints;
@@ -14,6 +15,15 @@ internal static class PermitEndpoints
         MapPermitTypes(group.MapGroup("/permit-types").WithTags("Permit types"));
         MapApplications(group.MapGroup("/applications").WithTags("Applications"));
         MapPublic(group.MapGroup("/public").WithTags("Public"));
+
+        group.MapGet("/inspectors", async (IDispatcher dispatcher, CancellationToken cancel) =>
+                TypedResults.Ok(await dispatcher.SendAsync(new ListInspectorsQuery(), cancel)))
+            .RequireAuthorization(Policies.Staff)
+            .WithTags("Inspections")
+            .WithName("ListInspectors")
+            .WithSummary("Lists the inspectors, for booking an inspection. Staff only.")
+            .Produces<IReadOnlyList<InspectorResponse>>()
+            .ProducesProblem(StatusCodes.Status403Forbidden);
 
         return group;
     }

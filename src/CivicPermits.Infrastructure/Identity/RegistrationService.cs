@@ -1,0 +1,72 @@
+using System.ComponentModel.DataAnnotations;
+using CivicPermits.Domain.Applications;
+using CivicPermits.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
+
+namespace CivicPermits.Infrastructure.Identity;
+
+/// <summary>What registering an applicant account came to.</summary>
+/// <param name="Errors">What the person must fix, by field. Empty when the request was accepted.</param>
+public sealed record RegistrationOutcome(IReadOnlyDictionary<string, string[]> Errors)
+{
+    /// <summary>Whether the request was accepted. It is accepted whether or not the address was already registered.</summary>
+    public bool Accepted => Errors.Count == 0;
+}
+
+/// <summary>
+/// Makes applicant accounts. Both hosts register people through this one method, so the rules cannot drift apart.
+/// </summary>
+/// <remarks>
+/// A taken address is answered exactly like a new one, so the response cannot be used to find out who has an
+/// account. There is no email confirmation in this demonstration; a production service would send one and
+/// would be the place to tell the owner of a taken address.
+/// </remarks>
+public sealed class RegistrationService(UserManager<ApplicationUser> users)
+{
+    /// <summary>Validates the details and creates an applicant account.</summary>
+    public async Task<RegistrationOutcome> RegisterApplicantAsync(string? email, string? password, string? displayName)
+    {
+        Dictionary<string, string[]> errors = [];
+
+        string address = email?.Trim() ?? string.Empty;
+        string name = displayName?.Trim() ?? string.Empty;
+
+        if (address.Length is 0 or > 256 || !new EmailAddressAttribute().IsValid(address))
+        {
+            errors["email"] = ["Enter a valid email address."];
+        }
+
+        if (name.Length is < 2 or > 80)
+        {
+            errors["displayName"] = ["Enter your name (2 to 80 characters)."];
+        }
+
+        if (string.IsNullOrEmpty(password))
+        {
+            errors["password"] = ["Enter a password."];
+        }
+
+        if (errors.Count > 0)
+        {
+            return new RegistrationOutcome(errors);
+        }
+
+        ApplicationUser person = new() { Id = Guid.CreateVersion7(), UserName = address, Email = address, DisplayName = name };
+        IdentityResult created = await users.CreateAsync(person, password!);
+
+        if (!created.Succeeded)
+        {
+            string[] fixable = [.. created.Errors
+                .Where(error => !error.Code.StartsWith("Duplicate", StringComparison.Ordinal))
+                .Select(error => error.Description)];
+
+            return fixable.Length == 0
+                ? new RegistrationOutcome(new Dictionary<string, string[]>())
+                : new RegistrationOutcome(new Dictionary<string, string[]> { ["password"] = fixable });
+        }
+
+        await users.AddToRoleAsync(person, nameof(ActorRole.Applicant));
+
+        return new RegistrationOutcome(new Dictionary<string, string[]>());
+    }
+}

@@ -8,7 +8,45 @@
     Apply for a building, sign, event or vendor permit, and follow your application, online.
 </p>
 
+<ul class="cards">
+    <li>
+        <h2>Find the right permit</h2>
+        <p>See every kind of permit the office offers, what it costs and how long it takes.</p>
+        <p><a href="/permits">Browse permits</a></p>
+    </li>
+    <li>
+        <h2>Check a permit</h2>
+        <p>Have a permit number? See whether it has been issued and when it expires. No account needed.</p>
+        <p><a href="/lookup">Check a permit</a></p>
+    </li>
+    <AuthorizeView>
+        <Authorized>
+            <li>
+                <h2>Your work</h2>
+                <p>Continue where you left off.</p>
+                <p><a href="/applications">Go to @(context.User.IsInRole("Applicant") ? "my applications" : context.User.IsInRole("Inspector") ? "my inspections" : "the applications")</a></p>
+            </li>
+        </Authorized>
+        <NotAuthorized>
+            <li>
+                <h2>Apply for a permit</h2>
+                <p>Make an account, then apply in three short steps. You can save a draft and come back to it.</p>
+                <p><a href="/account/register">Make an account</a> or <a href="/account/login">sign in</a></p>
+            </li>
+        </NotAuthorized>
+    </AuthorizeView>
+</ul>
+
+<h2>How it works</h2>
+<ol>
+    <li>Choose the permit you need.</li>
+    <li>Describe the project and where it will happen.</li>
+    <li>Check your answers and send the application.</li>
+    <li>A clerk reviews it. They may ask you to change something, and they always say why.</li>
+    <li>Once approved, pay the fee at the counter. If an inspection is needed, an inspector visits. Then the permit is issued.</li>
+</ol>
+
 <p>
-    This site is under construction. The sections that follow arrive one slice at a time: the application
-    journey, the clerk and inspector workspaces, and the administration console.
+    This site works without JavaScript and is built and tested against WCAG 2.1 AA. If something does not work for you,
+    that is a defect; please tell the permit office.
 </p>

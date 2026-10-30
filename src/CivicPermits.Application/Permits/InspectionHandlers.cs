@@ -23,6 +23,9 @@ public sealed record RecordInspectionResultCommand(Guid ApplicationId, Guid Insp
 /// <param name="Reason">Why, when there is a reason to give.</param>
 public sealed record CancelInspectionCommand(Guid ApplicationId, Guid InspectionId, string? Reason) : IRequest<ApplicationResponse>;
 
+/// <summary>Staff ask who the inspectors are, to choose one for an inspection.</summary>
+public sealed record ListInspectorsQuery : IRequest<IReadOnlyList<InspectorResponse>>;
+
 internal sealed class InspectionHandlers(
     IPermitApplicationStore applications,
     IPermitTypeStore types,
@@ -32,8 +35,16 @@ internal sealed class InspectionHandlers(
     TimeProvider time) :
     IRequestHandler<ScheduleInspectionCommand, ApplicationResponse>,
     IRequestHandler<RecordInspectionResultCommand, ApplicationResponse>,
-    IRequestHandler<CancelInspectionCommand, ApplicationResponse>
+    IRequestHandler<CancelInspectionCommand, ApplicationResponse>,
+    IRequestHandler<ListInspectorsQuery, IReadOnlyList<InspectorResponse>>
 {
+    public async ValueTask<IReadOnlyList<InspectorResponse>> HandleAsync(ListInspectorsQuery request, CancellationToken cancellationToken)
+    {
+        user.Require(ActorRole.Clerk, ActorRole.Administrator);
+
+        return await users.ListInspectorsAsync(cancellationToken);
+    }
+
     public async ValueTask<ApplicationResponse> HandleAsync(ScheduleInspectionCommand request, CancellationToken cancellationToken)
     {
         Actor actor = user.Require(ActorRole.Clerk, ActorRole.Administrator);

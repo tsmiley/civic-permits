@@ -1,12 +1,29 @@
 @inherits LayoutComponentBase
 
-<a class="skip-link" href="#main">Skip to main content</a>
+@* The document has a <base href="/">, so the skip link carries the page's own address: a bare "#main" would go to the home page. *@
+<a class="skip-link" href="@(new Uri(Navigation.Uri).GetLeftPart(UriPartial.Query))#main">Skip to main content</a>
 
 <header class="site-header">
     <p class="site-name"><a href="/">Civic Permits</a></p>
     <nav aria-label="Main">
         <ul class="nav-list">
-            <li><a href="/">Home</a></li>
+            <li><a href="/" aria-current="@Current("/")">Home</a></li>
+            <li><a href="/permits" aria-current="@Current("/permits")">Permits</a></li>
+            <li><a href="/lookup" aria-current="@Current("/lookup")">Check a permit</a></li>
+            <AuthorizeView>
+                <Authorized>
+                    <li><a href="/applications" aria-current="@Current("/applications")">@(context.User.IsInRole("Applicant") ? "My applications" : context.User.IsInRole("Inspector") ? "My inspections" : "Applications")</a></li>
+                    @if (context.User.IsInRole("Administrator"))
+                    {
+                        <li><a href="/admin/permit-types" aria-current="@Current("/admin/permit-types")">Permit types</a></li>
+                    }
+                    <li><a href="/account/logout">Sign out<span class="visually-hidden"> of @context.User.Identity?.Name</span></a></li>
+                </Authorized>
+                <NotAuthorized>
+                    <li><a href="/account/login" aria-current="@Current("/account/login")">Sign in</a></li>
+                    <li><a href="/account/register" aria-current="@Current("/account/register")">Register</a></li>
+                </NotAuthorized>
+            </AuthorizeView>
         </ul>
     </nav>
 </header>
@@ -21,3 +38,16 @@
         newly developed work, not code from any employer or client. All people, places and data in it are made up.
     </p>
 </footer>
+
+@code {
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    /// <summary>Marks the link for the section the person is in, for assistive technology and for the eye.</summary>
+    private string? Current(string path)
+    {
+        string here = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+
+        return path == "/" ? (here == "/" ? "page" : null) : here.StartsWith(path, StringComparison.Ordinal) ? "page" : null;
+    }
+}

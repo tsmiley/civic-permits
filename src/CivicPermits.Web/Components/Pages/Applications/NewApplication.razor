@@ -1,0 +1,45 @@
+@page "/applications/new"
+@attribute [Authorize(Roles = "Applicant")]
+@inherits CivicPage
+
+<PageTitle>@(Missing ? "Error: " : "")Choose a permit - Civic Permits</PageTitle>
+
+<Steps Names="@ApplicationSteps.Names" Current="1" />
+
+<h1>Choose a permit</h1>
+
+@if (Missing)
+{
+    <ErrorSummary Problems="@_missing" />
+}
+
+<form method="get" action="/applications/new/details" novalidate>
+    <fieldset class="@(Missing ? "field-has-error" : "")" aria-describedby="@(Missing ? "type-error" : null)">
+        <legend>Which permit do you need?</legend>
+        @if (Missing)
+        {
+            <p class="error-text" id="type-error"><span class="visually-hidden">Error: </span>Choose a permit to continue.</p>
+        }
+        @for (int i = 0; i < _types.Count; i++)
+        {
+            PermitTypeResponse type = _types[i];
+            <div class="choice">
+                <input type="radio" id="@(i == 0 ? "type" : "type-" + i)" name="type" value="@type.Id" aria-describedby="type-@i-hint" />
+                <label for="@(i == 0 ? "type" : "type-" + i)">@type.Name <span class="choice-category">(@type.Category)</span></label>
+                <p class="hint" id="type-@i-hint">@type.Description Fee: @Display.FeeRule(type).</p>
+            </div>
+        }
+    </fieldset>
+    <button type="submit" class="button">Continue</button>
+</form>
+
+@code {
+    private readonly List<FormProblem> _missing = [new FormProblem("type", "Choose a permit to continue.")];
+    private IReadOnlyList<PermitTypeResponse> _types = [];
+
+    [Parameter, SupplyParameterFromQuery]
+    public bool Missing { get; set; }
+
+    protected override async Task OnInitializedAsync() =>
+        _types = await Dispatcher.SendAsync(new CivicPermits.Application.Permits.ListPermitTypesQuery(false), Cancel);
+}

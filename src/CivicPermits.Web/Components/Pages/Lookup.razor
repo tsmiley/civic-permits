@@ -1,0 +1,66 @@
+@page "/lookup"
+@attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(CivicPermits.Infrastructure.Hosting.RateLimits.Public)]
+@inherits CivicPage
+@using CivicPermits.Application.Abstractions
+
+<PageTitle>@(_problem is null ? "" : "Error: ")Check a permit - Civic Permits</PageTitle>
+
+<h1>Check a permit</h1>
+
+<p>Enter a permit number to see whether the permit has been issued and when it expires. You do not need an account.</p>
+
+@if (_problem is not null)
+{
+    <ErrorSummary Problems="@Problems" />
+}
+
+<form method="get" action="/lookup" novalidate>
+    <TextField Id="number" Label="Permit number" Hint="For example CP-2026-000042" Value="@Number" Error="@_problem"
+               Required="true" Narrow="true" AutoComplete="off" MaxLength="20" />
+    <button type="submit" class="button">Check permit</button>
+</form>
+
+@if (_found is not null)
+{
+    <section aria-labelledby="result-title" class="result">
+        <h2 id="result-title">Permit @_found.Number</h2>
+        <dl class="facts">
+            <div><dt>Kind of permit</dt><dd>@_found.PermitTypeName</dd></div>
+            <div><dt>Status</dt><dd><Badge Status="@_found.Status" /></dd></div>
+            @if (_found.IssuedOn is not null)
+            {
+                <div><dt>Issued</dt><dd><time datetime="@Display.Iso(_found.IssuedOn.Value)">@Display.Date(_found.IssuedOn)</time></dd></div>
+            }
+            @if (_found.ExpiresOn is not null)
+            {
+                <div><dt>Valid until</dt><dd>@Display.Date(_found.ExpiresOn)</dd></div>
+            }
+        </dl>
+    </section>
+}
+
+@code {
+    private PublicPermitStatusResponse? _found;
+    private string? _problem;
+
+    [Parameter, SupplyParameterFromQuery]
+    public string? Number { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Number))
+        {
+            return;
+        }
+
+        try
+        {
+            _found = await Dispatcher.SendAsync(new CivicPermits.Application.Permits.LookupPermitQuery(Number), Cancel);
+        }
+        catch (RequestException)
+        {
+            _problem = "No permit was found with that number. Check it and try again.";
+            Problems.Add(new FormProblem("number", _problem));
+        }
+    }
+}

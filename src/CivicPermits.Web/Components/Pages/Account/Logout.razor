@@ -1,0 +1,31 @@
+@page "/account/logout"
+@inherits CivicPage
+@inject Microsoft.AspNetCore.Identity.SignInManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> SignIn
+
+<PageTitle>Sign out - Civic Permits</PageTitle>
+
+<h1>Sign out</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <p>You are signed in as @context.User.Identity?.Name.</p>
+        <form method="post" @formname="logout" @onsubmit="SignOutAsync">
+            <AntiforgeryToken />
+            <button type="submit" class="button">Sign out</button>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not signed in.</p>
+        <p><a href="/account/login">Sign in</a></p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    // Signing out changes state, so it is a post with an anti-forgery token: another site cannot sign you out by
+    // loading an image from this one.
+    private async Task SignOutAsync()
+    {
+        await SignIn.SignOutAsync();
+        Navigation.NavigateTo("/");
+    }
+}

@@ -1,0 +1,11 @@
+@inject NavigationManager Navigation
+
+@code {
+    // Somebody who is not signed in asked for a page that needs it: send them to sign in, and bring them back.
+    protected override void OnInitialized()
+    {
+        string back = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+
+        Navigation.NavigateTo("/account/login?returnUrl=" + Uri.EscapeDataString(back), forceLoad: true);
+    }
+}
