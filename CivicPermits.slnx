@@ -4,6 +4,8 @@
     <Project Path="src/CivicPermits.Application/CivicPermits.Application.csproj" />
     <Project Path="src/CivicPermits.Domain/CivicPermits.Domain.csproj" />
     <Project Path="src/CivicPermits.Infrastructure/CivicPermits.Infrastructure.csproj" />
+    <Project Path="src/CivicPermits.Migrations.Sqlite/CivicPermits.Migrations.Sqlite.csproj" />
+    <Project Path="src/CivicPermits.Migrations.SqlServer/CivicPermits.Migrations.SqlServer.csproj" />
     <Project Path="src/CivicPermits.Shared/CivicPermits.Shared.csproj" />
     <Project Path="src/CivicPermits.Web/CivicPermits.Web.csproj" />
   </Folder>
@@ -11,6 +13,7 @@
     <Project Path="tests/CivicPermits.Api.IntegrationTests/CivicPermits.Api.IntegrationTests.csproj" />
     <Project Path="tests/CivicPermits.Application.Tests/CivicPermits.Application.Tests.csproj" />
     <Project Path="tests/CivicPermits.Domain.Tests/CivicPermits.Domain.Tests.csproj" />
+    <Project Path="tests/CivicPermits.Infrastructure.Tests/CivicPermits.Infrastructure.Tests.csproj" />
     <Project Path="tests/CivicPermits.Web.A11yTests/CivicPermits.Web.A11yTests.csproj" />
   </Folder>
 </Solution>

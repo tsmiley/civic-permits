@@ -7,7 +7,7 @@ other company, and no real personal data.
 THIRD-PARTY SOFTWARE
 
 This repository does not contain third-party source or binaries. The packages below are restored from
-nuget.org when the solution is built. Direct dependencies are listed here; the complete list of 93
+nuget.org when the solution is built. Direct dependencies are listed here; the complete list of
 packages (direct and transitive) with each license is produced by:
 
     dotnet restore
@@ -21,6 +21,7 @@ Direct dependencies
   ---------------------------------------------------------------  ----------
   Microsoft.AspNetCore.Identity.EntityFrameworkCore                MIT
   Microsoft.AspNetCore.OpenApi                                     MIT
+  Microsoft.EntityFrameworkCore.Design (migration scaffolding only) MIT
   Microsoft.EntityFrameworkCore.Sqlite                             MIT
   Microsoft.EntityFrameworkCore.SqlServer                          MIT
   Microsoft.Extensions.DependencyInjection.Abstractions            MIT
@@ -59,3 +60,7 @@ rather than assumed.
 BROWSERS AND TOOLS
 
 The browser tests drive an already-installed Chrome or Edge through Playwright. No browser is bundled.
+
+Database migrations are scaffolded with the dotnet-ef command-line tool (MIT), pinned in
+.config/dotnet-tools.json and restored with `dotnet tool restore`. It is a development tool and is not part
+of the built application.

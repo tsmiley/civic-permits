@@ -1,5 +1,6 @@
 using CivicPermits.Api.Endpoints;
 using CivicPermits.Infrastructure.Hosting;
+using CivicPermits.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,8 @@ builder.AddCivicPermitsHosting();
 builder.Services.AddOpenApi();
 
 WebApplication app = builder.Build();
+
+await app.InitializeDatabaseAsync();
 
 app.UseCivicPermitsCommon(SecurityHeadersPolicy.ForApi);
 

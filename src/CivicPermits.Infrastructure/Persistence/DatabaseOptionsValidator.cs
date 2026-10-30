@@ -19,6 +19,11 @@ internal sealed class DatabaseOptionsValidator : IValidateOptions<DatabaseOption
             failures.Add($"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.ConnectionString)} is required.");
         }
 
+        if (options.SeedSampleData && !options.MigrateOnStartup)
+        {
+            failures.Add($"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.SeedSampleData)} needs {DatabaseOptions.SectionName}:{nameof(DatabaseOptions.MigrateOnStartup)}, because the tables must exist first.");
+        }
+
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 }

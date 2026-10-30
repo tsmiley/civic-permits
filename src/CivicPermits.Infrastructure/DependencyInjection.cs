@@ -32,10 +32,10 @@ public static class DependencyInjection
             switch (database.Provider)
             {
                 case DatabaseProvider.SqlServer:
-                    builder.UseSqlServer(database.ConnectionString);
+                    builder.UseSqlServer(database.ConnectionString, sql => sql.MigrationsAssembly(MigrationAssemblies.SqlServer));
                     break;
                 case DatabaseProvider.Sqlite:
-                    builder.UseSqlite(database.ConnectionString);
+                    builder.UseSqlite(database.ConnectionString, sqlite => sqlite.MigrationsAssembly(MigrationAssemblies.Sqlite));
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported database provider '{database.Provider}'.");

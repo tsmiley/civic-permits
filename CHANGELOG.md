@@ -6,6 +6,14 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Added
+- S1: the domain model. Permit types with fee rules, an application aggregate with a workflow held as one table,
+  status history, payment recording and inspections; money in whole cents; strict address and number value
+  objects; rule violations carry stable codes.
+- S1: EF Core mapping with value converters (money to cents, moments to UTC, permit numbers to text), one
+  migration history per provider (SQLite and SQL Server), and migrate-on-start and seed-on-start options.
+- S1: sample data for the fictional Town of Bramblewick, built through the real domain methods and idempotent.
+- S1: tests for the domain (including an independent specification of the workflow), migrations on both providers,
+  seeding, constraints and a LocalDB run that skips when LocalDB is absent.
 - S0: the solution scaffold on .NET 10 LTS: domain, application, infrastructure, API, web and shared projects, and
   four test projects.
 - A dispatcher for use cases, and a first use case that describes the running service.

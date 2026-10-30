@@ -46,6 +46,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 ["Database:Provider"] = "Sqlite",
                 ["Database:ConnectionString"] = $"Data Source={_databasePath}",
                 ["Hosting:RedirectToHttps"] = "false",
+
+                // The Development settings migrate and seed on start. A test chooses that deliberately.
+                ["Database:MigrateOnStartup"] = "false",
+                ["Database:SeedSampleData"] = "false",
             };
 
             foreach ((string key, string? value) in _settings)
