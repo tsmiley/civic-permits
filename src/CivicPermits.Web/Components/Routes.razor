@@ -1,0 +1,7 @@
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+        @* After every navigation, focus moves to the page's h1 so a screen reader announces where the user is. *@
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

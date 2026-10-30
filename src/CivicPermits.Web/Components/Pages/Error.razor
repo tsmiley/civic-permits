@@ -1,0 +1,22 @@
+@page "/error"
+@using System.Diagnostics
+
+<PageTitle>Something went wrong - Civic Permits</PageTitle>
+
+<h1>Something went wrong</h1>
+
+<p>
+    The request could not be completed. Try again in a few minutes, or <a href="/">return to the home page</a>.
+</p>
+
+@if (!string.IsNullOrEmpty(RequestId))
+{
+    <p>If you contact the office, quote this reference: <strong>@RequestId</strong></p>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId => HttpContext?.Items["CorrelationId"] as string ?? Activity.Current?.Id;
+}

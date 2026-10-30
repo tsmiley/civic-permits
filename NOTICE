@@ -1,0 +1,61 @@
+Civic Permits
+Copyright (c) 2026 Travis Smiley. Released under the MIT License (see LICENSE).
+
+This is newly developed portfolio work. It contains no source code from any employer, client or
+other company, and no real personal data.
+
+THIRD-PARTY SOFTWARE
+
+This repository does not contain third-party source or binaries. The packages below are restored from
+nuget.org when the solution is built. Direct dependencies are listed here; the complete list of 93
+packages (direct and transitive) with each license is produced by:
+
+    dotnet restore
+    pwsh scripts/license-audit.ps1
+
+The audit fails when any package is outside the licenses below, so this file cannot silently fall behind.
+
+Direct dependencies
+
+  Package                                                          License
+  ---------------------------------------------------------------  ----------
+  Microsoft.AspNetCore.Identity.EntityFrameworkCore                MIT
+  Microsoft.AspNetCore.OpenApi                                     MIT
+  Microsoft.EntityFrameworkCore.Sqlite                             MIT
+  Microsoft.EntityFrameworkCore.SqlServer                          MIT
+  Microsoft.Extensions.DependencyInjection.Abstractions            MIT
+  Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore MIT
+  Microsoft.Extensions.Options                                     MIT
+  Serilog.AspNetCore (and the Serilog packages it brings)          Apache-2.0
+  System.Security.Cryptography.Pkcs (security pin)                 MIT
+
+Test-only dependencies
+
+  Microsoft.AspNetCore.Mvc.Testing                                 MIT
+  Microsoft.Extensions.DependencyInjection                         MIT
+  Microsoft.Extensions.TimeProvider.Testing                        MIT
+  Microsoft.NET.Test.Sdk                                           MIT
+  Microsoft.Playwright                                             MIT
+  xunit.v3 (xunit.v3.mtp-off) and xunit.runner.visualstudio        Apache-2.0
+
+Transitive packages of note
+
+  SQLitePCLRaw.* (SQLite native bindings used by Microsoft.EntityFrameworkCore.Sqlite)   Apache-2.0
+  Microsoft.Data.SqlClient (used by Microsoft.EntityFrameworkCore.SqlServer)             MIT
+
+REVIEWED EXCEPTIONS (not MIT, Apache-2.0 or BSD)
+
+Two Microsoft redistributable runtime components arrive transitively through Microsoft.Data.SqlClient,
+which SQL Server support requires. Neither is stored in this repository; both are licensed by Microsoft
+under its own license terms, which ship inside each package.
+
+  Microsoft.Data.SqlClient.SNI.runtime     Microsoft Software License Terms (native SQL networking library)
+  Microsoft.Identity.Client.NativeInterop  Microsoft Software License Terms (native authentication interop)
+
+Anyone who builds the SQLite-only configuration still restores them, because the SQL Server provider is
+part of the solution. This exception is recorded here and in scripts/license-audit.ps1 so it is visible
+rather than assumed.
+
+BROWSERS AND TOOLS
+
+The browser tests drive an already-installed Chrome or Edge through Playwright. No browser is bundled.

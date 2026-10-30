@@ -1,0 +1,50 @@
+name: CI
+
+# While the repository is private, CI runs only when started by hand: private-repository Actions minutes are
+# limited, and every check below can be run locally with the commands in CONTRIBUTING.md.
+# At publication (public repositories get free minutes) this trigger block gains:
+#   push: { branches: [main] }
+#   pull_request: { branches: [main] }
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test:
+    name: Build, format and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET (version from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore (fails on a vulnerable package)
+        run: dotnet restore CivicPermits.slnx
+
+      - name: Check formatting and style
+        run: dotnet format CivicPermits.slnx --verify-no-changes --no-restore
+
+      - name: Build (warnings are errors)
+        run: dotnet build CivicPermits.slnx --no-restore
+
+      - name: Test
+        run: dotnet test CivicPermits.slnx --no-build
+
+      - name: Audit package licenses
+        shell: pwsh
+        run: ./scripts/license-audit.ps1

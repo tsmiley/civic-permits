@@ -1,0 +1,29 @@
+# Dependabot configuration.
+#
+# open-pull-requests-limit is 0 while the repository is private: Dependabot jobs use private-repository
+# Actions minutes, which are budgeted. A limit of 0 turns routine version-update pull requests off and leaves
+# vulnerability alerts and security updates on. At publication the limits are raised to 5.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      microsoft-framework:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+          - "Microsoft.EntityFrameworkCore.*"
+          - "Microsoft.Extensions.*"
+      testing:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "Microsoft.Playwright"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0

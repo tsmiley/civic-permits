@@ -1,0 +1,133 @@
+/*
+  Civic Permits: base styles.
+  Accessibility decisions live here as much as in the markup:
+  - colours are chosen for contrast (text 4.5:1 or better, interface parts 3:1 or better);
+  - focus is always visible and never removed;
+  - layout reflows to a 320px viewport without horizontal scrolling;
+  - motion is off when the user asks for less of it.
+*/
+:root {
+  /* Contrast ratios below are computed against --paper (WCAG relative luminance), not estimated. */
+  --ink: #1a1a1a;          /* 17.4:1 */
+  --paper: #ffffff;
+  --muted: #4a4a4a;        /* 8.86:1 */
+  --brand: #0b4f8a;        /* 8.4:1; white text on it is also 8.4:1 */
+  --brand-ink: #ffffff;
+  --rule: #767676;         /* 4.54:1, above the 3:1 needed for a boundary */
+  --focus: #b35c00;        /* 4.72:1; the ring is drawn 3px outside the control, so it sits on the page colour */
+  --measure: 70ch;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--brand);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  text-decoration-thickness: 0.15em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* main takes focus only to set the reading position after the skip link. Keyboard users still get the ring from :focus-visible. */
+main:focus:not(:focus-visible) {
+  outline: none;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  padding: 0.75rem 1rem;
+  background: var(--brand);
+  color: var(--brand-ink);
+  z-index: 10;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.site-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+main {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.lead {
+  font-size: 1.2rem;
+}
+
+.site-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.site-footer p {
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
