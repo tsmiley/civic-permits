@@ -1,0 +1,68 @@
+@* One step the person can take, as its own small form: a heading that names it, an optional reason, and a button
+   whose text says what will happen. Each has a unique form name so the right handler runs without scripting. *@
+<section class="action" aria-labelledby="@(FormName)-title">
+    <h3 id="@(FormName)-title">@Title</h3>
+    @if (Description is not null)
+    {
+        <p>@Description</p>
+    }
+    <form method="post" @formname="@FormName" @onsubmit="OnSubmit" novalidate>
+        <AntiforgeryToken />
+        @if (WithReason)
+        {
+            <TextAreaField Id="@($"{FormName}-reason")" Label="@ReasonLabel" Hint="@ReasonHint" Required="@ReasonRequired"
+                           Error="@Error" Value="@Value" Rows="3" MaxLength="1000" />
+        }
+        <button type="submit" class="button @ButtonClass">@ButtonText</button>
+    </form>
+</section>
+
+@code {
+    /// <summary>A name unique on the page.</summary>
+    [Parameter, EditorRequired]
+    public string FormName { get; set; } = string.Empty;
+
+    /// <summary>The heading.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>A sentence about what the step does.</summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>The button text.</summary>
+    [Parameter, EditorRequired]
+    public string ButtonText { get; set; } = string.Empty;
+
+    /// <summary>An extra style, such as <c>button-danger</c> or <c>button-secondary</c>.</summary>
+    [Parameter]
+    public string ButtonClass { get; set; } = string.Empty;
+
+    /// <summary>Whether the step takes a reason or note.</summary>
+    [Parameter]
+    public bool WithReason { get; set; }
+
+    /// <summary>Whether the reason must be given.</summary>
+    [Parameter]
+    public bool ReasonRequired { get; set; }
+
+    /// <summary>The label of the reason box.</summary>
+    [Parameter]
+    public string ReasonLabel { get; set; } = "Reason";
+
+    /// <summary>Help for the reason box.</summary>
+    [Parameter]
+    public string? ReasonHint { get; set; }
+
+    /// <summary>What is wrong with the reason, if anything.</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>The reason as last posted.</summary>
+    [Parameter]
+    public string? Value { get; set; }
+
+    /// <summary>Runs when the form is posted.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback OnSubmit { get; set; }
+}

@@ -1,0 +1,51 @@
+@page "/admin/permit-types"
+@attribute [Authorize(Roles = "Administrator")]
+@inherits CivicPage
+
+<PageTitle>Permit types - Civic Permits</PageTitle>
+
+<h1>Permit types</h1>
+
+@if (Saved)
+{
+    <p class="notice" role="status">The permit type is saved.</p>
+}
+
+<p><a class="button" href="/admin/permit-types/new">Add a permit type</a></p>
+
+<div class="table-wrap" role="region" aria-labelledby="types-caption" tabindex="0">
+    <table>
+        <caption id="types-caption">Every kind of permit, including those closed to new applications</caption>
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Category</th>
+                <th scope="col">Fee</th>
+                <th scope="col">Inspection</th>
+                <th scope="col">New applications</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (PermitTypeResponse type in _types)
+            {
+                <tr>
+                    <th scope="row"><a href="/admin/permit-types/@type.Id">@type.Name</a></th>
+                    <td>@type.Category</td>
+                    <td>@Display.FeeRule(type)</td>
+                    <td>@(type.RequiresInspection ? "Required" : "Not required")</td>
+                    <td>@(type.IsActive ? "Open" : "Closed")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private IReadOnlyList<PermitTypeResponse> _types = [];
+
+    [Parameter, SupplyParameterFromQuery]
+    public bool Saved { get; set; }
+
+    protected override async Task OnInitializedAsync() =>
+        _types = await Dispatcher.SendAsync(new CivicPermits.Application.Permits.ListPermitTypesQuery(true), Cancel);
+}

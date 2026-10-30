@@ -1,0 +1,75 @@
+@page "/applications/new/details"
+@attribute [Authorize(Roles = "Applicant")]
+@inherits CivicPage
+
+<PageTitle>@(HasProblems ? "Error: " : "")Project details - Civic Permits</PageTitle>
+
+<Steps Names="@ApplicationSteps.Names" Current="2" />
+
+<h1>Project details</h1>
+
+@if (_type is not null)
+{
+    <p>You are applying for: <strong>@_type.Name</strong>. <a href="/applications/new">Choose a different permit</a></p>
+
+    <ErrorSummary Problems="@Problems" />
+
+    <form method="post" @formname="details" @onsubmit="SubmitAsync" novalidate>
+        <AntiforgeryToken />
+        <input type="hidden" name="type" value="@_type.Id" />
+        <ApplicationFields Description="@Posted("description")" Line1="@Posted("line1")" Line2="@Posted("line2")" City="@Posted("city")"
+                           Region="@Posted("region")" PostalCode="@Posted("postalCode")" Valuation="@Posted("valuation")"
+                           ValuationRequired="@(_type.ValuationRateBasisPoints > 0)" ErrorFor="@ErrorFor" />
+        <button type="submit" class="button">Save and continue</button>
+    </form>
+}
+
+@code {
+    private PermitTypeResponse? _type;
+
+    [Parameter, SupplyParameterFromQuery]
+    public Guid? Type { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // On the first visit the type is in the address; when the form is posted it comes back as a hidden field.
+        Guid? chosen = Type ?? (Guid.TryParse(Posted("type"), out Guid posted) ? posted : null);
+
+        if (chosen is null)
+        {
+            Navigation.NavigateTo("/applications/new?missing=true");
+
+            return;
+        }
+
+        _type = await LoadOrNotFoundAsync(() => Dispatcher.SendAsync(new CivicPermits.Application.Permits.GetPermitTypeQuery(chosen.Value), Cancel));
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_type is null)
+        {
+            return;
+        }
+
+        long cents = CheckApplicationInput(_type.ValuationRateBasisPoints > 0);
+
+        if (HasProblems)
+        {
+            return;
+        }
+
+        ApplicationResponse? created = await TryAsync(() => Dispatcher.SendAsync(
+            new CivicPermits.Application.Permits.CreateApplicationCommand(new CreateApplicationRequest(
+                _type.Id,
+                Posted("description"),
+                new AddressDto(Posted("line1"), Posted("line2"), Posted("city"), Posted("region"), Posted("postalCode")),
+                cents)),
+            Cancel));
+
+        if (created is not null)
+        {
+            Navigation.NavigateTo($"/applications/{created.Id}?done=created");
+        }
+    }
+}

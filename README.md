@@ -36,7 +36,16 @@ dotnet test
 dotnet run --project src/CivicPermits.Web
 ```
 
-Then open <http://localhost:5211>. The REST API runs separately with
+Then open <http://localhost:5211>. In Development the site creates its database, loads the fictional town's sample data
+and, when you give it a password, the sample sign-ins (applicant, clerk, inspector, administrator). The password is
+yours to choose; it is read from the environment and never written down:
+
+```bash
+export Database__SampleUserPassword="a password of at least twelve characters"
+dotnet run --project src/CivicPermits.Web
+```
+
+Then sign in as `clerk@bramblewick.test` (or any address in the API section below) with that password. The REST API runs separately with
 `dotnet run --project src/CivicPermits.Api` at <http://localhost:5210> (OpenAPI document at `/openapi/v1.json`
 in Development).
 
@@ -83,6 +92,35 @@ withdraw it; only staff review and decide; a reason is required to deny or to as
 worked out at submission from the permit type (a base amount plus a share of the declared value, in whole cents
 and basis points, never floating point); a permit is issued only once the fee is recorded as paid and, where the
 permit type needs one, the latest inspection has passed; every step is recorded with who took it and when.
+
+## The web site
+
+Server-rendered Blazor pages that work without JavaScript; the small scripts only improve focus handling.
+
+| Who | What they can do |
+|---|---|
+| Anyone | Browse the permits and their fees, look up a permit by number, register, sign in |
+| Applicants | Start an application in three steps (choose, describe, check and send), change a draft or one sent back, withdraw, follow the history |
+| Clerks | See every application, start a review, approve, deny or ask for changes (with a reason the applicant reads), record the fee payment, book and cancel inspections, issue the permit |
+| Inspectors | See the applications they are booked to inspect and record the result |
+| Administrators | Everything a clerk can do, plus define, change, open and close permit types |
+
+Accessibility is built in rather than added, and tested in a real browser on every change (WCAG 2.1 AA is the
+target; this is not a claim of certification):
+
+- one `h1` per page, landmarks, a skip link that really moves focus, a title that says where you are, and the
+  current page marked in the navigation;
+- every field has a visible label, hint and error tied to it with `aria-describedby`; required fields say so in
+  words; forms are not validated by the browser, so errors are written, specific and listed together;
+- a form that comes back with problems puts focus on an error summary whose links go to each field;
+- a multi-step journey shows where you are in words (`aria-current="step"`), and every status is written out, never
+  shown by colour alone;
+- all text and interface parts meet the contrast ratios noted in `app.css` (computed, not estimated), focus is always
+  visible, targets are at least 44px, tables scroll inside their own focusable region, and nothing scrolls sideways
+  at 320px or at 200% text size;
+- the content security policy forbids inline script and style, so the pages need neither.
+
+The accessibility report (what was tested, how, what was found, what remains) arrives with the accessibility slice.
 
 ## The API
 
@@ -140,8 +178,8 @@ A test fails if the model and either provider's migrations disagree.
 |---|---|---|
 | S0 | Solution scaffold, hosting, health, problem details, CI | in review |
 | S1 | Domain model, workflow, database, sample data | in review |
-| S2 | Identity, roles, API endpoints | in progress |
-| S3 | Web interface | planned |
+| S2 | Identity, roles, API endpoints | in review |
+| S3 | Web interface | in review |
 | S4 | Automated and manual accessibility testing, report | planned |
 | S5 | Documentation, screenshots, diagrams | planned |
 

@@ -350,6 +350,24 @@ public class ApplicationApiTests
     }
 
     [Fact]
+    public async Task Staff_can_list_the_inspectors_by_name_and_nobody_else_can()
+    {
+        using SeededApi api = new();
+        using HttpClient clerk = await api.SignInAsync(SeededApi.Clerk, Token);
+        using HttpClient applicant = await api.SignInAsync(SeededApi.ApplicantOne, Token);
+        using HttpClient inspector = await api.SignInAsync(SeededApi.InspectorOne, Token);
+        using HttpClient anonymous = api.Anonymous();
+
+        IReadOnlyList<InspectorResponse> inspectors = (await clerk.GetFromJsonAsync<IReadOnlyList<InspectorResponse>>("/api/v1/inspectors", Token))!;
+
+        Assert.Equal(["Sample Inspector One", "Sample Inspector Two"], inspectors.Select(person => person.DisplayName));
+        Assert.Contains(inspectors, person => person.Id == SampleIdentities.InspectorOne);
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync("/api/v1/inspectors", Token)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await inspector.GetAsync("/api/v1/inspectors", Token)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/v1/inspectors", Token)).StatusCode);
+    }
+
+    [Fact]
     public async Task Searching_shows_each_person_only_what_they_are_allowed_to_see()
     {
         using SeededApi api = new();

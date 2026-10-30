@@ -1,0 +1,92 @@
+@page "/applications"
+@attribute [Authorize]
+@inherits CivicPage
+
+<PageTitle>@Heading - Civic Permits</PageTitle>
+
+<h1>@Heading</h1>
+
+@if (InRole("Applicant"))
+{
+    <p><a class="button" href="/applications/new">Start a new application</a></p>
+}
+
+@if (IsStaff)
+{
+    <form method="get" action="/applications" class="filter" novalidate>
+        <SelectField Id="status" Label="Show">
+            <option value="" selected="@(Status is null)">All applications</option>
+            @foreach (string status in StatusNames)
+            {
+                <option value="@status" selected="@(Status == status)">@Display.Status(status)</option>
+            }
+        </SelectField>
+        <button type="submit" class="button button-secondary">Show applications</button>
+    </form>
+}
+
+@if (_page is { Items.Count: 0 })
+{
+    <p>@(InRole("Applicant") ? "You have no applications yet." : "There are no applications to show.")</p>
+}
+else if (_page is not null)
+{
+    <div class="table-wrap" role="region" aria-labelledby="results-caption" tabindex="0">
+        <table>
+            <caption id="results-caption">@Heading, newest first. @_page.TotalCount in all.</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Application</th>
+                    <th scope="col">Permit</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Project</th>
+                    <th scope="col">Started</th>
+                    <th scope="col" class="numeric">Fee</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (ApplicationSummaryResponse item in _page.Items)
+                {
+                    <tr>
+                        <th scope="row"><a href="/applications/@item.Id">@(item.Number ?? "Draft")<span class="visually-hidden"> started @Display.Date(item.CreatedOn)</span></a></th>
+                        <td>@item.PermitTypeName</td>
+                        <td><Badge Status="@item.Status" /></td>
+                        <td>@Shorten(item.ProjectDescription)</td>
+                        <td><time datetime="@Display.Iso(item.CreatedOn)">@Display.Date(item.CreatedOn)</time></td>
+                        <td class="numeric">@(item.Number is null ? "Not yet worked out" : Display.Dollars(item.FeeAssessedCents))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <Pager Page="@_page.Page" PageSize="@_page.PageSize" Total="@_page.TotalCount" LinkFor="@LinkFor" />
+}
+
+@code {
+    private static readonly string[] StatusNames = ["Draft", "Submitted", "InReview", "CorrectionsRequested", "Approved", "Denied", "Withdrawn", "Issued"];
+
+    private PagedResponse<ApplicationSummaryResponse>? _page;
+
+    [Parameter, SupplyParameterFromQuery]
+    public string? Status { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Page { get; set; }
+
+    private bool IsStaff => InRole("Clerk") || InRole("Administrator");
+
+    private string Heading => InRole("Applicant") ? "My applications" : InRole("Inspector") && !IsStaff ? "My inspections" : "Applications";
+
+    protected override async Task OnInitializedAsync()
+    {
+        CivicPermits.Domain.Applications.ApplicationStatus? filter =
+            Enum.TryParse(Status, out CivicPermits.Domain.Applications.ApplicationStatus parsed) && Enum.IsDefined(parsed) ? parsed : null;
+
+        _page = await TryAsync(() => Dispatcher.SendAsync(new CivicPermits.Application.Permits.SearchApplicationsQuery(filter, Math.Max(Page ?? 1, 1), 15), Cancel));
+    }
+
+    private string LinkFor(int page) => "/applications?" + (Status is null ? "" : "status=" + Uri.EscapeDataString(Status) + "&") + "page=" + page;
+
+    private static string Shorten(string text) => text.Length <= 70 ? text : text[..67] + "...";
+}

@@ -8,6 +8,8 @@
   <ItemGroup>
     <ProjectReference Include="..\CivicPermits.Application\CivicPermits.Application.csproj" />
     <ProjectReference Include="..\CivicPermits.Infrastructure\CivicPermits.Infrastructure.csproj" />
+    <ProjectReference Include="..\CivicPermits.Migrations.Sqlite\CivicPermits.Migrations.Sqlite.csproj" />
+    <ProjectReference Include="..\CivicPermits.Migrations.SqlServer\CivicPermits.Migrations.SqlServer.csproj" />
     <ProjectReference Include="..\CivicPermits.Shared\CivicPermits.Shared.csproj" />
   </ItemGroup>
 

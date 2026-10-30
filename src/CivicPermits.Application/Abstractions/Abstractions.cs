@@ -74,4 +74,7 @@ public interface IUserDirectory
 {
     /// <summary>Whether the person exists and acts as an inspector.</summary>
     Task<bool> IsInspectorAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>Every inspector, by name.</summary>
+    Task<IReadOnlyList<InspectorResponse>> ListInspectorsAsync(CancellationToken cancellationToken);
 }

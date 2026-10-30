@@ -1,0 +1,36 @@
+@if (Pages > 1)
+{
+    <nav class="pager" aria-label="Pages of results">
+        <p>Page @Page of @Pages (@Total results)</p>
+        <ul>
+            @if (Page > 1)
+            {
+                <li><a href="@LinkFor(Page - 1)">Previous page<span class="visually-hidden"> (page @(Page - 1))</span></a></li>
+            }
+            @if (Page < Pages)
+            {
+                <li><a href="@LinkFor(Page + 1)">Next page<span class="visually-hidden"> (page @(Page + 1))</span></a></li>
+            }
+        </ul>
+    </nav>
+}
+
+@code {
+    /// <summary>The current page, from 1.</summary>
+    [Parameter]
+    public int Page { get; set; } = 1;
+
+    /// <summary>How many results a page holds.</summary>
+    [Parameter]
+    public int PageSize { get; set; } = 20;
+
+    /// <summary>How many results there are in all.</summary>
+    [Parameter]
+    public int Total { get; set; }
+
+    /// <summary>Makes the address of a page.</summary>
+    [Parameter, EditorRequired]
+    public Func<int, string> LinkFor { get; set; } = _ => "#";
+
+    private int Pages => (int)Math.Ceiling(Total / (double)PageSize);
+}

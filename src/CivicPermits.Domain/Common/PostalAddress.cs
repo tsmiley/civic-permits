@@ -40,19 +40,55 @@ public sealed partial record PostalAddress
     /// <exception cref="DomainRuleException">A part is missing, too long or not in the expected shape.</exception>
     public static PostalAddress Create(string? line1, string? line2, string? city, string? region, string? postalCode)
     {
+        if (Check(line1, line2, city, region, postalCode) is [{ } first, ..])
+        {
+            throw new DomainRuleException(first.Code, first.Message);
+        }
+
+        string? unit = string.IsNullOrWhiteSpace(line2) ? null : line2.Trim();
+
+        return new PostalAddress(Trimmed(line1), unit, Trimmed(city), Trimmed(region).ToUpperInvariant(), Trimmed(postalCode));
+    }
+
+    /// <summary>
+    /// Finds every rule the values break, not just the first, so a form can tell the person everything to fix at once.
+    /// <see cref="Create"/> uses this same check, so the two can never disagree.
+    /// </summary>
+    public static IReadOnlyList<RuleViolation> Check(string? line1, string? line2, string? city, string? region, string? postalCode)
+    {
         string street = Trimmed(line1);
         string? unit = string.IsNullOrWhiteSpace(line2) ? null : line2.Trim();
         string town = Trimmed(city);
         string code = Trimmed(region).ToUpperInvariant();
         string zip = Trimmed(postalCode);
+        List<RuleViolation> found = [];
 
-        DomainRuleException.Require(street.Length is >= 3 and <= 120, "address.line1", "Enter the street address (3 to 120 characters).");
-        DomainRuleException.Require(unit is null || unit.Length <= 60, "address.line2", "The second address line can be at most 60 characters.");
-        DomainRuleException.Require(town.Length is >= 2 and <= 80, "address.city", "Enter the city (2 to 80 characters).");
-        DomainRuleException.Require(RegionShape().IsMatch(code), "address.region", "Enter the two-letter state code.");
-        DomainRuleException.Require(PostalCodeShape().IsMatch(zip), "address.postal_code", "Enter a five-digit postal code.");
+        if (street.Length is < 3 or > 120)
+        {
+            found.Add(new RuleViolation("address.line1", "Enter the street address (3 to 120 characters)."));
+        }
 
-        return new PostalAddress(street, unit, town, code, zip);
+        if (unit is { Length: > 60 })
+        {
+            found.Add(new RuleViolation("address.line2", "The second address line can be at most 60 characters."));
+        }
+
+        if (town.Length is < 2 or > 80)
+        {
+            found.Add(new RuleViolation("address.city", "Enter the city (2 to 80 characters)."));
+        }
+
+        if (!RegionShape().IsMatch(code))
+        {
+            found.Add(new RuleViolation("address.region", "Enter the two-letter state code."));
+        }
+
+        if (!PostalCodeShape().IsMatch(zip))
+        {
+            found.Add(new RuleViolation("address.postal_code", "Enter a five-digit postal code."));
+        }
+
+        return found;
     }
 
     /// <summary>The address on one line, for lists and letters.</summary>

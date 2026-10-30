@@ -1,0 +1,33 @@
+@inject NavigationManager Navigation
+@* Put directly under the page's h1. On a page that has just been refused, a small script moves focus here, so a
+   screen reader says what is wrong before anything else and a keyboard user is already in the right place.
+   The links carry the page's own address: the document has a <base href="/">, so a bare "#field" would go to the home page. *@
+@if (Problems.Count > 0)
+{
+    <div class="error-summary" role="alert" tabindex="-1" data-error-summary aria-labelledby="error-summary-title">
+        <h2 id="error-summary-title">There is a problem</h2>
+        <ul>
+            @foreach (FormProblem problem in Problems)
+            {
+                <li>
+                    @if (problem.Field is not null)
+                    {
+                        <a href="@Here#@problem.Field">@problem.Message</a>
+                    }
+                    else
+                    {
+                        @problem.Message
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    /// <summary>What went wrong.</summary>
+    [Parameter]
+    public IReadOnlyList<FormProblem> Problems { get; set; } = [];
+
+    private string Here => new Uri(Navigation.Uri).GetLeftPart(UriPartial.Query);
+}

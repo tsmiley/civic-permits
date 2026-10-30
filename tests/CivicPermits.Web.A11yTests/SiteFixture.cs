@@ -23,6 +23,12 @@ public sealed class SiteFixture : IAsyncLifetime
     private Process? _site;
     private IPlaywright? _playwright;
 
+    /// <summary>
+    /// The password of the sample sign-ins, made up fresh for every run. It exists only in this process and the site
+    /// process it starts, so no credential is written anywhere.
+    /// </summary>
+    public string Password { get; } = $"Aa1-{Guid.NewGuid():N}";
+
     /// <summary>The address the site listens on.</summary>
     public Uri BaseAddress { get; private set; } = new("http://127.0.0.1:0");
 
@@ -48,6 +54,10 @@ public sealed class SiteFixture : IAsyncLifetime
         start.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         start.Environment["Database__Provider"] = "Sqlite";
         start.Environment["Database__ConnectionString"] = $"Data Source={_databasePath}";
+        start.Environment["Database__MigrateOnStartup"] = "true";
+        start.Environment["Database__SeedSampleData"] = "true";
+        start.Environment["Database__SampleUserPassword"] = Password;
+        start.Environment["RateLimiting__AuthPerWindow"] = "1000";
 
         _site = Process.Start(start) ?? throw new InvalidOperationException("The web site process did not start.");
         _ = _site.StandardOutput.ReadToEndAsync();

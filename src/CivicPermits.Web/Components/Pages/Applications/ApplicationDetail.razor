@@ -1,0 +1,413 @@
+@page "/applications/{Id:guid}"
+@attribute [Authorize]
+@inherits CivicPage
+@using CivicPermits.Domain.Applications
+@using CivicPermits.Application.Permits
+
+<PageTitle>@(HasProblems ? "Error: " : "")@Heading - Civic Permits</PageTitle>
+
+@if (_app is not null)
+{
+    @if (IsApplicant && _app.Status == "Draft")
+    {
+        <Steps Names="@ApplicationSteps.Names" Current="3" />
+    }
+
+    <h1>@Heading</h1>
+
+    <p class="status-line">
+        Status: <Badge Status="@_app.Status" />
+        <span class="muted">@_app.PermitTypeName</span>
+    </p>
+
+    @if (Done is not null && Messages.TryGetValue(Done, out string? message))
+    {
+        <p class="notice" role="status">@message</p>
+    }
+
+    <ErrorSummary Problems="@Problems" />
+
+    @if (IsApplicant)
+    {
+        <p class="next-step"><strong>Next:</strong> @NextStep</p>
+    }
+
+    @if (_app.AllowedActions.Count > 0 || CanRecordPayment || NeedsInspection || OpenInspections.Any())
+    {
+        <section aria-labelledby="actions-title" class="actions">
+            <h2 id="actions-title">What you can do</h2>
+
+            @if (IsApplicant && _app.AllowedActions.Contains("Submit"))
+            {
+                <p><a class="button button-secondary" href="/applications/@_app.Id/edit">Change the details</a></p>
+
+                <ActionForm FormName="submit" Title="Send the application"
+                            Description="@(_app.Status == "Draft" ? "Check the details below. When they are right, send the application to the office. The fee is worked out when you send it." : "Send the corrected application back to the office.")"
+                            ButtonText="Send application" OnSubmit="@(() => StepAsync("submit", ApplicationAction.Submit, "submitted", null))" />
+            }
+
+            @if (IsApplicant && _app.AllowedActions.Contains("Withdraw"))
+            {
+                <ActionForm FormName="withdraw" Title="Withdraw the application"
+                            Description="Stop this application. You cannot undo this, but you can start a new application."
+                            WithReason="true" ReasonLabel="Reason (optional)" Value="@Posted("withdraw-reason")" Error="@ErrorFor("withdraw-reason")"
+                            ButtonText="Withdraw application" ButtonClass="button-secondary"
+                            OnSubmit="@(() => StepAsync("withdraw", ApplicationAction.Withdraw, "withdrawn", Posted("withdraw-reason")))" />
+            }
+
+            @if (_app.AllowedActions.Contains("StartReview"))
+            {
+                <ActionForm FormName="start-review" Title="Start the review" Description="Take this application into review."
+                            ButtonText="Start review" OnSubmit="@(() => StepAsync("start-review", ApplicationAction.StartReview, "review-started", null))" />
+            }
+
+            @if (_app.AllowedActions.Contains("Approve"))
+            {
+                <ActionForm FormName="approve" Title="Approve" Description="The application meets the requirements."
+                            WithReason="true" ReasonLabel="Note (optional)" Value="@Posted("approve-reason")" Error="@ErrorFor("approve-reason")"
+                            ButtonText="Approve application" OnSubmit="@(() => StepAsync("approve", ApplicationAction.Approve, "approved", Posted("approve-reason")))" />
+            }
+
+            @if (_app.AllowedActions.Contains("RequestCorrections"))
+            {
+                <ActionForm FormName="request-corrections" Title="Ask for changes"
+                            Description="Send the application back to the applicant to change."
+                            WithReason="true" ReasonRequired="true" ReasonLabel="What needs to change"
+                            ReasonHint="The applicant reads this exactly as you write it. Say what to change and why."
+                            Value="@Posted("request-corrections-reason")" Error="@ErrorFor("request-corrections-reason")"
+                            ButtonText="Ask for changes" ButtonClass="button-secondary"
+                            OnSubmit="@(() => StepAsync("request-corrections", ApplicationAction.RequestCorrections, "corrections-requested", Posted("request-corrections-reason")))" />
+            }
+
+            @if (_app.AllowedActions.Contains("Deny"))
+            {
+                <ActionForm FormName="deny" Title="Deny" Description="The application cannot be approved."
+                            WithReason="true" ReasonRequired="true" ReasonLabel="Reason for the decision"
+                            ReasonHint="The applicant reads this exactly as you write it."
+                            Value="@Posted("deny-reason")" Error="@ErrorFor("deny-reason")"
+                            ButtonText="Deny application" ButtonClass="button-danger"
+                            OnSubmit="@(() => StepAsync("deny", ApplicationAction.Deny, "denied", Posted("deny-reason")))" />
+            }
+
+            @if (CanRecordPayment)
+            {
+                <ActionForm FormName="payment" Title="Record the fee payment"
+                            Description="@($"Use this once {Display.Dollars(_app.FeeAssessedCents)} has been paid at the counter.")"
+                            ButtonText="Record payment" OnSubmit="@PaymentAsync" />
+            }
+
+            @if (NeedsInspection)
+            {
+                <section class="action" aria-labelledby="schedule-title">
+                    <h3 id="schedule-title">Book an inspection</h3>
+                    <form method="post" @formname="schedule" @onsubmit="ScheduleAsync" novalidate>
+                        <AntiforgeryToken />
+                        <SelectField Id="schedule-inspector" Name="schedule-inspector" Label="Inspector" Required="true" Error="@ErrorFor("schedule-inspector")">
+                            <option value="">Choose an inspector</option>
+                            @foreach (InspectorResponse inspector in _inspectors)
+                            {
+                                <option value="@inspector.Id" selected="@(Posted("schedule-inspector") == inspector.Id.ToString())">@inspector.DisplayName</option>
+                            }
+                        </SelectField>
+                        <TextField Id="schedule-when" Label="Date and time (UTC)" Type="datetime-local" Required="true"
+                                   Hint="In the future, and within 120 days. Times are in UTC."
+                                   Value="@Posted("schedule-when")" Error="@ErrorFor("schedule-when")" />
+                        <button type="submit" class="button">Book inspection</button>
+                    </form>
+                </section>
+            }
+
+            @foreach (InspectionResponse inspection in OpenInspections)
+            {
+                string form = "result-" + inspection.Id.ToString("N");
+
+                @if (CanRecordResult(inspection))
+                {
+                    <section class="action" aria-labelledby="@(form)-title">
+                        <h3 id="@(form)-title">Record the inspection result (@Display.DateTime(inspection.ScheduledFor))</h3>
+                        <form method="post" @formname="@form" @onsubmit="@(() => ResultAsync(inspection.Id, form))" novalidate>
+                            <AntiforgeryToken />
+                            <fieldset>
+                                <legend>Did the work pass?</legend>
+                                <div class="choice">
+                                    <input type="radio" id="@(form)-outcome" name="@(form)-outcome" value="pass" checked="@(Posted(form + "-outcome") == "pass")" />
+                                    <label for="@(form)-outcome">Passed</label>
+                                </div>
+                                <div class="choice">
+                                    <input type="radio" id="@(form)-outcome-fail" name="@(form)-outcome" value="fail" checked="@(Posted(form + "-outcome") == "fail")" />
+                                    <label for="@(form)-outcome-fail">Failed</label>
+                                </div>
+                            </fieldset>
+                            <TextAreaField Id="@(form + "-notes")" Label="What you found" Rows="3" MaxLength="1000"
+                                           Hint="Required when the work failed: the applicant reads it to know what to put right."
+                                           Value="@Posted(form + "-notes")" Error="@ErrorFor(form + "-notes")" />
+                            <button type="submit" class="button">Save result</button>
+                        </form>
+                    </section>
+                }
+
+                @if (IsStaff)
+                {
+                    <ActionForm FormName="@("cancel-" + inspection.Id.ToString("N"))" Title="@($"Cancel the inspection on {Display.DateTime(inspection.ScheduledFor)}")"
+                                WithReason="true" ReasonLabel="Reason (optional)"
+                                Value="@Posted("cancel-" + inspection.Id.ToString("N") + "-reason")"
+                                ButtonText="Cancel inspection" ButtonClass="button-secondary"
+                                OnSubmit="@(() => CancelInspectionAsync(inspection.Id))" />
+                }
+            }
+
+            @if (_app.AllowedActions.Contains("Issue"))
+            {
+                <ActionForm FormName="issue" Title="Issue the permit"
+                            Description="The fee must be recorded as paid and, where the permit needs one, an inspection must have passed."
+                            ButtonText="Issue permit" OnSubmit="@(() => StepAsync("issue", ApplicationAction.Issue, "issued", null))" />
+            }
+        </section>
+    }
+
+    <section aria-labelledby="details-title">
+        <h2 id="details-title">Details</h2>
+        <dl class="facts">
+            <div><dt>Application number</dt><dd>@(_app.Number ?? "Given when you send it")</dd></div>
+            <div><dt>Permit</dt><dd>@_app.PermitTypeName</dd></div>
+            <div><dt>Project</dt><dd>@_app.ProjectDescription</dd></div>
+            <div><dt>Site</dt><dd>@_app.SiteAddress.Line1@(string.IsNullOrEmpty(_app.SiteAddress.Line2) ? "" : ", " + _app.SiteAddress.Line2), @_app.SiteAddress.City, @_app.SiteAddress.Region @_app.SiteAddress.PostalCode</dd></div>
+            <div><dt>Value of the project</dt><dd>@Display.Dollars(_app.DeclaredValuationCents)</dd></div>
+            <div><dt>Started</dt><dd><time datetime="@Display.Iso(_app.CreatedOn)">@Display.Date(_app.CreatedOn)</time></dd></div>
+            @if (_app.SubmittedOn is not null)
+            {
+                <div><dt>Sent</dt><dd><time datetime="@Display.Iso(_app.SubmittedOn.Value)">@Display.Date(_app.SubmittedOn)</time></dd></div>
+            }
+            @if (_app.Number is not null)
+            {
+                <div><dt>Fee</dt><dd>@Display.Dollars(_app.FeeAssessedCents) (@(_app.FeePaidOn is null ? "not yet paid" : "paid on " + Display.Date(_app.FeePaidOn)))</dd></div>
+                <div><dt>Inspection</dt><dd>@(_app.InspectionRequired ? "Required before the permit is issued" : "Not required")</dd></div>
+            }
+            @if (_app.DecisionNote is not null)
+            {
+                <div><dt>Decision note</dt><dd>@_app.DecisionNote</dd></div>
+            }
+            @if (_app.IssuedOn is not null)
+            {
+                <div><dt>Issued</dt><dd><time datetime="@Display.Iso(_app.IssuedOn.Value)">@Display.Date(_app.IssuedOn)</time></dd></div>
+                <div><dt>Valid until</dt><dd>@Display.Date(_app.ExpiresOn)</dd></div>
+            }
+        </dl>
+    </section>
+
+    @if (_app.Inspections.Count > 0)
+    {
+        <section aria-labelledby="inspections-title">
+            <h2 id="inspections-title">Inspections</h2>
+            <div class="table-wrap" role="region" aria-labelledby="inspections-caption" tabindex="0">
+                <table>
+                    <caption id="inspections-caption" class="visually-hidden">Inspections for this application</caption>
+                    <thead>
+                        <tr><th scope="col">Booked for</th><th scope="col">Result</th><th scope="col">Notes</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (InspectionResponse inspection in _app.Inspections)
+                        {
+                            <tr>
+                                <th scope="row"><time datetime="@Display.Iso(inspection.ScheduledFor)">@Display.DateTime(inspection.ScheduledFor)</time></th>
+                                <td><Badge Status="@inspection.Status" /></td>
+                                <td>@(inspection.Notes ?? "None")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
+    <section aria-labelledby="history-title">
+        <h2 id="history-title">History</h2>
+        @if (_app.History.Count == 0)
+        {
+            <p>Nothing has happened yet.</p>
+        }
+        else
+        {
+            <div class="table-wrap" role="region" aria-labelledby="history-caption" tabindex="0">
+                <table>
+                    <caption id="history-caption" class="visually-hidden">Every step taken on this application, oldest first</caption>
+                    <thead>
+                        <tr><th scope="col">When</th><th scope="col">What happened</th><th scope="col">By</th><th scope="col">Note</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (StatusChangeResponse change in _app.History)
+                        {
+                            <tr>
+                                <th scope="row"><time datetime="@Display.Iso(change.At)">@Display.DateTime(change.At)</time></th>
+                                <td>@Display.Status(change.From) to @Display.Status(change.To).ToLowerInvariant()</td>
+                                <td>@change.ActorRole</td>
+                                <td>@(change.Note ?? "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <p><a href="/applications">Back to the list</a></p>
+}
+
+@code {
+    private static readonly Dictionary<string, string> Messages = new()
+    {
+        ["created"] = "Your draft is saved. Check the details below, then send the application.",
+        ["saved"] = "Your changes are saved.",
+        ["submitted"] = "The application has been sent to the office.",
+        ["withdrawn"] = "The application has been withdrawn.",
+        ["review-started"] = "The review has started.",
+        ["approved"] = "The application is approved.",
+        ["corrections-requested"] = "The application has been sent back to the applicant.",
+        ["denied"] = "The application is denied.",
+        ["paid"] = "The payment is recorded.",
+        ["booked"] = "The inspection is booked.",
+        ["result-saved"] = "The inspection result is saved.",
+        ["inspection-cancelled"] = "The inspection is cancelled.",
+        ["issued"] = "The permit is issued.",
+    };
+
+    private ApplicationResponse? _app;
+    private IReadOnlyList<InspectorResponse> _inspectors = [];
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public string? Done { get; set; }
+
+    private bool IsApplicant => InRole("Applicant");
+
+    private bool IsStaff => InRole("Clerk") || InRole("Administrator");
+
+    private string Heading => _app?.Number is { } number ? $"Application {number}" : "Draft application";
+
+    private bool CanRecordPayment => IsStaff && _app is { Status: "Approved", FeePaidOn: null };
+
+    private bool NeedsInspection => IsStaff && _app is { Status: "Approved", InspectionRequired: true } && !OpenInspections.Any();
+
+    private IEnumerable<InspectionResponse> OpenInspections =>
+        _app?.Inspections.Where(inspection => inspection.Status == "Scheduled") ?? [];
+
+    private bool CanRecordResult(InspectionResponse inspection) =>
+        InRole("Administrator") || (InRole("Inspector") && inspection.InspectorId == UserId);
+
+    private string NextStep => _app!.Status switch
+    {
+        "Draft" => "Check the details below, then send the application to the office.",
+        "Submitted" => "Waiting for a clerk to start the review. You do not need to do anything.",
+        "InReview" => "A clerk is reviewing your application. You do not need to do anything yet.",
+        "CorrectionsRequested" => "The clerk has asked for changes: read the note in the history below, change the details, and send the application again.",
+        "Approved" => _app.FeePaidOn is null
+            ? $"Approved. Pay the fee of {Display.Dollars(_app.FeeAssessedCents)} at the permit counter{(_app.InspectionRequired ? ", and wait for the inspection to be booked" : string.Empty)}. Then the permit is issued."
+            : _app.InspectionRequired ? "The fee is paid. The permit is issued once an inspection has passed." : "The fee is paid. The permit will be issued shortly.",
+        "Denied" => "The application was denied. The reason is in the details below. You can start a new application.",
+        "Withdrawn" => "You withdrew this application. You can start a new one.",
+        "Issued" => "Your permit is issued. Keep the number to show it is valid.",
+        _ => string.Empty,
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _app = await LoadOrNotFoundAsync(() => Dispatcher.SendAsync(new GetApplicationQuery(Id), Cancel));
+
+        if (_app is not null && NeedsInspection)
+        {
+            _inspectors = await Dispatcher.SendAsync(new ListInspectorsQuery(), Cancel);
+        }
+    }
+
+    protected override string? FieldFor(string code) => code switch
+    {
+        "inspection.inspector" => "inspector",
+        "inspection.in_the_past" or "inspection.too_far_ahead" => "when",
+        "application.reason_required" => "reason",
+        "inspection.failure_needs_notes" => "notes",
+        _ => base.FieldFor(code),
+    };
+
+    private async Task StepAsync(string form, ApplicationAction action, string done, string? reason)
+    {
+        ApplicationResponse? result = await TryAsync(
+            () => Dispatcher.SendAsync(new TransitionApplicationCommand(Id, action, reason), Cancel), form);
+
+        if (result is not null)
+        {
+            Navigation.NavigateTo($"/applications/{Id}?done={done}");
+        }
+    }
+
+    private async Task PaymentAsync()
+    {
+        ApplicationResponse? result = await TryAsync(() => Dispatcher.SendAsync(new RecordFeePaymentCommand(Id), Cancel), "payment");
+
+        if (result is not null)
+        {
+            Navigation.NavigateTo($"/applications/{Id}?done=paid");
+        }
+    }
+
+    private async Task ScheduleAsync()
+    {
+        if (!Guid.TryParse(Posted("schedule-inspector"), out Guid inspector))
+        {
+            Problems.Add(new FormProblem("schedule-inspector", "Choose an inspector."));
+        }
+
+        if (!DateTime.TryParse(Posted("schedule-when"), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime when))
+        {
+            Problems.Add(new FormProblem("schedule-when", "Enter the date and time of the inspection."));
+        }
+
+        if (HasProblems)
+        {
+            return;
+        }
+
+        ApplicationResponse? result = await TryAsync(
+            () => Dispatcher.SendAsync(new ScheduleInspectionCommand(Id, new ScheduleInspectionRequest(inspector, new DateTimeOffset(DateTime.SpecifyKind(when, DateTimeKind.Utc)))), Cancel),
+            "schedule");
+
+        if (result is not null)
+        {
+            Navigation.NavigateTo($"/applications/{Id}?done=booked");
+        }
+    }
+
+    private async Task ResultAsync(Guid inspectionId, string form)
+    {
+        string outcome = Posted(form + "-outcome");
+
+        if (outcome is not ("pass" or "fail"))
+        {
+            Problems.Add(new FormProblem(form + "-outcome", "Choose whether the work passed or failed."));
+
+            return;
+        }
+
+        ApplicationResponse? result = await TryAsync(
+            () => Dispatcher.SendAsync(new RecordInspectionResultCommand(Id, inspectionId, new InspectionResultRequest(outcome == "pass", Posted(form + "-notes"))), Cancel),
+            form);
+
+        if (result is not null)
+        {
+            Navigation.NavigateTo($"/applications/{Id}?done=result-saved");
+        }
+    }
+
+    private async Task CancelInspectionAsync(Guid inspectionId)
+    {
+        string form = "cancel-" + inspectionId.ToString("N");
+        ApplicationResponse? result = await TryAsync(
+            () => Dispatcher.SendAsync(new CancelInspectionCommand(Id, inspectionId, Posted(form + "-reason")), Cancel), form);
+
+        if (result is not null)
+        {
+            Navigation.NavigateTo($"/applications/{Id}?done=inspection-cancelled");
+        }
+    }
+}

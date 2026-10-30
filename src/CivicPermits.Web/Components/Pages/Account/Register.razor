@@ -1,0 +1,51 @@
+@page "/account/register"
+@attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(CivicPermits.Infrastructure.Hosting.RateLimits.Auth)]
+@inherits CivicPage
+@inject CivicPermits.Infrastructure.Identity.RegistrationService Registration
+
+<PageTitle>@(HasProblems ? "Error: " : "")Make an account - Civic Permits</PageTitle>
+
+<h1>Make an account</h1>
+
+<p>An account lets you apply for permits, save drafts and follow your applications.</p>
+
+<ErrorSummary Problems="@Problems" />
+
+<form method="post" @formname="register" @onsubmit="SubmitAsync" novalidate>
+    <AntiforgeryToken />
+    <TextField Id="name" Label="Your name" Required="true" AutoComplete="name" Value="@Posted("name")" Error="@ErrorFor("name")"
+               MaxLength="80" />
+    <TextField Id="email" Label="Email address" Type="email" Required="true" AutoComplete="email"
+               Value="@Posted("email")" Error="@ErrorFor("email")" MaxLength="256" />
+    <TextField Id="password" Label="Password" Type="password" Required="true" AutoComplete="new-password"
+               Hint="At least 12 characters, with an upper-case letter, a lower-case letter and a number. A sentence you can remember works well."
+               Error="@ErrorFor("password")" />
+    <button type="submit" class="button">Make account</button>
+</form>
+
+<p>Already have an account? <a href="/account/login">Sign in</a>.</p>
+
+@code {
+    private async Task SubmitAsync()
+    {
+        CivicPermits.Infrastructure.Identity.RegistrationOutcome outcome =
+            await Registration.RegisterApplicantAsync(Posted("email"), Posted("password"), Posted("name"));
+
+        if (outcome.Accepted)
+        {
+            Navigation.NavigateTo("/account/login?registered=true");
+
+            return;
+        }
+
+        foreach ((string field, string[] messages) in outcome.Errors)
+        {
+            string id = field == "displayName" ? "name" : field;
+
+            foreach (string message in messages)
+            {
+                Problems.Add(new FormProblem(id, message));
+            }
+        }
+    }
+}

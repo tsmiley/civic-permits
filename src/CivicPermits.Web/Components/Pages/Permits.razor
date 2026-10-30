@@ -1,0 +1,38 @@
+@page "/permits"
+@inherits CivicPage
+
+<PageTitle>Permits - Civic Permits</PageTitle>
+
+<h1>Permits</h1>
+
+<p class="lead">The kinds of permit the office offers. The fee is worked out when you send your application.</p>
+
+@foreach (IGrouping<string, PermitTypeResponse> group in _types.GroupBy(type => type.Category))
+{
+    <section aria-labelledby="category-@group.Key">
+        <h2 id="category-@group.Key">@group.Key permits</h2>
+        <ul class="cards">
+            @foreach (PermitTypeResponse type in group)
+            {
+                <li>
+                    <h3>@type.Name</h3>
+                    <p>@type.Description</p>
+                    <dl class="facts">
+                        <div><dt>Fee</dt><dd>@Display.FeeRule(type)</dd></div>
+                        <div><dt>Inspection</dt><dd>@(type.RequiresInspection ? "Required before the permit is issued" : "Not required")</dd></div>
+                        <div><dt>Valid for</dt><dd>@type.ValidityDays days after it is issued</dd></div>
+                        <div><dt>Review</dt><dd>We aim to review within @type.TargetReviewDays days</dd></div>
+                    </dl>
+                    <p><a href="/applications/new/details?type=@type.Id">Apply<span class="visually-hidden"> for @type.Name</span></a></p>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+@code {
+    private IReadOnlyList<PermitTypeResponse> _types = [];
+
+    protected override async Task OnInitializedAsync() =>
+        _types = await Dispatcher.SendAsync(new CivicPermits.Application.Permits.ListPermitTypesQuery(false), Cancel);
+}

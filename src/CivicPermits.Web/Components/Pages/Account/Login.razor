@@ -1,0 +1,71 @@
+@page "/account/login"
+@attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(CivicPermits.Infrastructure.Hosting.RateLimits.Auth)]
+@inherits CivicPage
+@inject Microsoft.AspNetCore.Identity.SignInManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> SignIn
+
+<PageTitle>@(HasProblems ? "Error: " : "")Sign in - Civic Permits</PageTitle>
+
+<h1>Sign in</h1>
+
+<ErrorSummary Problems="@Problems" />
+
+@if (Registered)
+{
+    <p class="notice" role="status">
+        Thank you. If that email address was not already in use, your account is ready. Sign in below.
+    </p>
+}
+
+<form method="post" @formname="login" @onsubmit="SubmitAsync" novalidate>
+    <AntiforgeryToken />
+    <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+    <TextField Id="email" Label="Email address" Type="email" Required="true" AutoComplete="username"
+               Value="@Posted("email")" Error="@ErrorFor("email")" />
+    <TextField Id="password" Label="Password" Type="password" Required="true" AutoComplete="current-password"
+               Error="@ErrorFor("password")" />
+    <button type="submit" class="button">Sign in</button>
+</form>
+
+<p>No account yet? <a href="/account/register">Make one</a>.</p>
+
+@code {
+    [Parameter, SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public bool Registered { get; set; }
+
+    private async Task SubmitAsync()
+    {
+        string email = Posted("email").Trim();
+        string password = Posted("password");
+
+        if (email.Length == 0)
+        {
+            Problems.Add(new FormProblem("email", "Enter your email address."));
+        }
+
+        if (password.Length == 0)
+        {
+            Problems.Add(new FormProblem("password", "Enter your password."));
+        }
+
+        if (HasProblems)
+        {
+            return;
+        }
+
+        Microsoft.AspNetCore.Identity.SignInResult result = await SignIn.PasswordSignInAsync(email, password, isPersistent: false, lockoutOnFailure: true);
+
+        if (!result.Succeeded)
+        {
+            // One message for a wrong password, an unknown address and a locked account, so the page cannot be used
+            // to find out who has an account.
+            Problems.Add(new FormProblem("email", "The email address or password is not right."));
+
+            return;
+        }
+
+        Navigation.NavigateTo(Display.LocalPath(Posted("returnUrl")) ?? "/applications");
+    }
+}

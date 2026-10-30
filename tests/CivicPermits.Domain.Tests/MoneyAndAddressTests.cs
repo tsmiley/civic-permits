@@ -111,6 +111,27 @@ public class MoneyAndAddressTests
     }
 
     [Fact]
+    public void Checking_an_address_finds_every_problem_not_only_the_first()
+    {
+        IReadOnlyList<RuleViolation> found = PostalAddress.Check("", null, "B", "T", "7");
+
+        Assert.Equal(
+            ["address.line1", "address.city", "address.region", "address.postal_code"],
+            found.Select(violation => violation.Code));
+        Assert.All(found, violation => Assert.False(string.IsNullOrWhiteSpace(violation.Message)));
+    }
+
+    [Fact]
+    public void Checking_a_good_address_finds_nothing_and_creating_a_bad_one_reports_the_first_problem_found()
+    {
+        Assert.Empty(PostalAddress.Check("100 Lantern Row", "Suite 4", "Bramblewick", "TG", "70001"));
+
+        DomainRuleException failure = Assert.Throws<DomainRuleException>(() => PostalAddress.Create("", null, "B", "T", "7"));
+
+        Assert.Equal(PostalAddress.Check("", null, "B", "T", "7")[0].Code, failure.Code);
+    }
+
+    [Fact]
     public void Two_addresses_with_the_same_parts_are_equal()
     {
         Assert.Equal(

@@ -1,0 +1,8 @@
+@* The status is always written out. Colour only reinforces it, and the text/background pairs all exceed 7:1. *@
+<span class="badge @Display.StatusClass(Status)">@Display.Status(Status)</span>
+
+@code {
+    /// <summary>The status as the API names it, such as InReview.</summary>
+    [Parameter, EditorRequired]
+    public string Status { get; set; } = string.Empty;
+}

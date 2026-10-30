@@ -1,0 +1,48 @@
+@* The fields an application asks for, shared by starting one and changing one. *@
+<TextAreaField Id="description" Label="What do you plan to do?" Required="true" Rows="5" MaxLength="2000"
+               Hint="A few sentences: what the work or event is, and roughly how big it is."
+               Value="@Description" Error="@ErrorFor("description")" />
+
+<fieldset>
+    <legend>Where will it happen?</legend>
+    <TextField Id="line1" Label="Street address" Required="true" Value="@Line1" Error="@ErrorFor("line1")" MaxLength="120" />
+    <TextField Id="line2" Label="Unit or suite (optional)" Value="@Line2" Error="@ErrorFor("line2")" MaxLength="60" />
+    <TextField Id="city" Label="City or town" Required="true" Value="@City" Error="@ErrorFor("city")" MaxLength="80" />
+    <TextField Id="region" Label="State" Hint="Two letters, such as TG" Required="true" Value="@Region" Error="@ErrorFor("region")"
+               Narrow="true" MaxLength="2" />
+    <TextField Id="postal-code" Name="postalCode" Label="ZIP code" Hint="Five digits" Required="true" Value="@PostalCode"
+               Error="@ErrorFor("postal-code")" Narrow="true" InputMode="numeric" MaxLength="5" />
+</fieldset>
+
+<TextField Id="valuation" Label="Value of the project, in dollars"
+           Hint="@(ValuationRequired ? "Required for this permit: part of the fee depends on it. For example 24000 or 24,000.50." : "Leave blank or enter 0 if it does not apply. For example 24000.")"
+           Required="@ValuationRequired" Value="@Valuation" Error="@ErrorFor("valuation")" Narrow="true" InputMode="decimal" />
+
+@code {
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public string? Line1 { get; set; }
+
+    [Parameter]
+    public string? Line2 { get; set; }
+
+    [Parameter]
+    public string? City { get; set; }
+
+    [Parameter]
+    public string? Region { get; set; }
+
+    [Parameter]
+    public string? PostalCode { get; set; }
+
+    [Parameter]
+    public string? Valuation { get; set; }
+
+    [Parameter]
+    public bool ValuationRequired { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<string, string?> ErrorFor { get; set; } = _ => null;
+}

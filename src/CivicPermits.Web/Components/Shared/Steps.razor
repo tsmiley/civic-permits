@@ -1,0 +1,24 @@
+@* Where the person is in a multi-step journey. The current step is marked for assistive technology and in words,
+   not only by colour or weight. *@
+<nav aria-label="Progress">
+    <ol class="steps">
+        @for (int i = 0; i < Names.Length; i++)
+        {
+            int number = i + 1;
+            <li aria-current="@(number == Current ? "step" : null)" class="@(number == Current ? "step step-current" : number < Current ? "step step-done" : "step")">
+                <span class="step-number">Step @number of @Names.Length</span>
+                <span class="step-name">@Names[i]@if (number < Current) {<span class="visually-hidden"> (completed)</span>}</span>
+            </li>
+        }
+    </ol>
+</nav>
+
+@code {
+    /// <summary>The names of the steps, in order.</summary>
+    [Parameter, EditorRequired]
+    public string[] Names { get; set; } = [];
+
+    /// <summary>The step the person is on, from 1.</summary>
+    [Parameter]
+    public int Current { get; set; } = 1;
+}

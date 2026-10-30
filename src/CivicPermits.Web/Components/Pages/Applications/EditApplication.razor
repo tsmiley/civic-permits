@@ -1,0 +1,90 @@
+@page "/applications/{Id:guid}/edit"
+@attribute [Authorize(Roles = "Applicant")]
+@inherits CivicPage
+
+<PageTitle>@(HasProblems ? "Error: " : "")Change your application - Civic Permits</PageTitle>
+
+<Steps Names="@ApplicationSteps.Names" Current="2" />
+
+<h1>Change your application</h1>
+
+@if (_app is not null && _type is not null)
+{
+    @if (_app.Status is "Draft" or "CorrectionsRequested")
+    {
+        <p>
+            You are changing your application for <strong>@_app.PermitTypeName</strong>.
+            <a href="/applications/@_app.Id">Go back without saving</a>
+        </p>
+
+        @if (_app.Status == "CorrectionsRequested" && _app.History.Count > 0)
+        {
+            <p class="notice">The clerk asked: <q>@_app.History[^1].Note</q></p>
+        }
+
+        <ErrorSummary Problems="@Problems" />
+
+        <form method="post" @formname="edit" @onsubmit="SubmitAsync" novalidate>
+            <AntiforgeryToken />
+            <ApplicationFields Description="@Initial("description", _app.ProjectDescription)"
+                               Line1="@Initial("line1", _app.SiteAddress.Line1)" Line2="@Initial("line2", _app.SiteAddress.Line2)"
+                               City="@Initial("city", _app.SiteAddress.City)" Region="@Initial("region", _app.SiteAddress.Region)"
+                               PostalCode="@Initial("postalCode", _app.SiteAddress.PostalCode)"
+                               Valuation="@Initial("valuation", (_app.DeclaredValuationCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                               ValuationRequired="@(_type.ValuationRateBasisPoints > 0)" ErrorFor="@ErrorFor" />
+            <button type="submit" class="button">Save changes</button>
+        </form>
+    }
+    else
+    {
+        <p>This application can no longer be changed because it is <strong>@Display.Status(_app.Status).ToLowerInvariant()</strong>.</p>
+        <p><a href="/applications/@_app.Id">Go back to the application</a></p>
+    }
+}
+
+@code {
+    private ApplicationResponse? _app;
+    private PermitTypeResponse? _type;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _app = await LoadOrNotFoundAsync(() => Dispatcher.SendAsync(new CivicPermits.Application.Permits.GetApplicationQuery(Id), Cancel));
+
+        if (_app is not null)
+        {
+            _type = await Dispatcher.SendAsync(new CivicPermits.Application.Permits.GetPermitTypeQuery(_app.PermitTypeId), Cancel);
+        }
+    }
+
+    private string Initial(string field, string? saved) => IsPosted ? Posted(field) : saved ?? string.Empty;
+
+    private async Task SubmitAsync()
+    {
+        if (_type is null)
+        {
+            return;
+        }
+
+        long cents = CheckApplicationInput(_type.ValuationRateBasisPoints > 0);
+
+        if (HasProblems)
+        {
+            return;
+        }
+
+        ApplicationResponse? saved = await TryAsync(() => Dispatcher.SendAsync(
+            new CivicPermits.Application.Permits.ReviseApplicationCommand(Id, new ReviseApplicationRequest(
+                Posted("description"),
+                new AddressDto(Posted("line1"), Posted("line2"), Posted("city"), Posted("region"), Posted("postalCode")),
+                cents)),
+            Cancel));
+
+        if (saved is not null)
+        {
+            Navigation.NavigateTo($"/applications/{Id}?done=saved");
+        }
+    }
+}
