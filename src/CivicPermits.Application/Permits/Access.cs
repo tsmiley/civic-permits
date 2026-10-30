@@ -30,7 +30,9 @@ internal static class Access
 
     /// <summary>
     /// Whether the person may know the application exists. Applicants see their own, staff see all, and an
-    /// inspector sees those with an inspection booked for them. To anyone else it does not exist.
+    /// inspector sees those with an inspection booked for them or carried out by them: an inspection that was called
+    /// off before it happened no longer counts, so a cancelled booking does not leave the applicant's name, address and
+    /// project readable. To anyone else it does not exist.
     /// </summary>
     public static bool CanSee(this Actor actor, PermitApplication application)
     {
@@ -40,7 +42,8 @@ internal static class Access
         {
             ActorRole.Applicant => application.ApplicantId == actor.Id,
             ActorRole.Clerk or ActorRole.Administrator => true,
-            ActorRole.Inspector => application.Inspections.Any(inspection => inspection.InspectorId == actor.Id),
+            ActorRole.Inspector => application.Inspections.Any(inspection =>
+                inspection.InspectorId == actor.Id && inspection.Status != InspectionStatus.Cancelled),
             _ => false,
         };
     }

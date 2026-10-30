@@ -79,7 +79,7 @@ request's correlation id (also in the `X-Correlation-Id` header):
 | | `POST .../start-review`, `.../request-corrections`, `.../approve`, `.../deny`, `.../issue`, `.../payment`, `.../inspections` | clerks and administrators |
 | | `POST .../inspections/{id}/result` | the assigned inspector, or an administrator |
 | | `POST .../inspections/{id}/cancel` | clerks and administrators |
-| | `GET /applications`, `GET /applications/{id}` | applicants see their own, staff see all, inspectors see those with an inspection booked for them |
+| | `GET /applications`, `GET /applications/{id}` | applicants see their own, staff see all, inspectors see those with an inspection booked for them or carried out by them (a cancelled booking no longer counts) |
 | | `GET /inspectors` | clerks and administrators (to choose one) |
 | Public | `GET /public/permits/{number}` | anyone; rate limited; type, status and dates only |
 | System | `GET /info`, `/health/live`, `/health/ready` | anyone |

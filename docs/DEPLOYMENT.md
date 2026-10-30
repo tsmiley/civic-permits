@@ -14,8 +14,9 @@ Nested names use a double underscore in environment variables.
 | `Database__Provider` | `Sqlite` | `Sqlite` or `SqlServer` |
 | `Database__ConnectionString` | `Data Source=civic-permits.db` | SQLite is a file path; SQL Server uses Windows authentication on LocalDB. A deployment that needs a password supplies the whole string by environment variable, never in a file in the repository. |
 | `Database__MigrateOnStartup` | `false` (`true` in Development) | Apply pending migrations when the host starts. A real deployment applies migrations as a deliberate step before the new version runs. |
-| `Database__SeedSampleData` | `false` (`true` in Development) | Load the fictional town. Needs `MigrateOnStartup`, and is **refused outright in Production**. |
+| `Database__SeedSampleData` | `false` (`true` in Development) | Load the fictional town. Needs `MigrateOnStartup`, and is **refused outright anywhere but Development**, Staging included, so no sample sign-in can exist on a deployed host. |
 | `Database__SampleUserPassword` | unset | The password for the sample sign-ins, at least twelve characters. Environment or user secrets only. |
+| `AllowedHosts` | `*` | **Set this in production** to the real host names, separated by semicolons (for example `permits.example.org`). The shipped `*` accepts any `Host` header. The cookie handler builds absolute redirect addresses from the request's host, so a forged one affects only the sender's own response today, but nothing should depend on that. |
 | `Hosting__RedirectToHttps` | `true` | Turn off only behind a proxy that already terminates TLS and redirects |
 | `RateLimiting__AuthPerWindow` | 10 | Sign-in, registration and refresh, per client address |
 | `RateLimiting__PublicPerWindow` | 30 | Public permit lookup, per client address |
@@ -23,6 +24,13 @@ Nested names use a double underscore in environment variables.
 | `RateLimiting__WindowSeconds` | 60 | The length of a window |
 
 Options are validated when the host starts: a missing or malformed value stops it with a message that names the setting.
+
+## Runtime
+
+Run on ASP.NET Core **10.0.7 or later** (10.0.14 is the version the tests run on). Versions 10.0.0 to 10.0.6 on hosts that
+are not Windows had a flaw (GHSA-9mv3-2cwr-p262) that let authentication cookies be forged, and both hosts protect their
+cookies and bearer tokens with the framework's data protection. Outside Development each host checks the version it is
+running on when it starts and refuses to run on an older one (or one it cannot read), with a message that says so.
 
 ## Migrations
 
@@ -56,7 +64,9 @@ Two things need configuring that the code cannot guess:
    it (for example with a certificate or a key vault). Without this, a token made by one instance is unreadable to
    another.
 
-TLS belongs to the proxy or the host. In Production the site sets `Secure` on its cookies and sends HSTS; set
+TLS belongs to the proxy or the host. Outside Development the site sets `Secure` on its cookies and both hosts send
+`Strict-Transport-Security: max-age=63072000; includeSubDomains` (two years, every subdomain; no `preload`, which is a
+public commitment that is hard to undo and is left to the owner of the domain); set
 `Hosting__RedirectToHttps` to `false` only when the proxy already redirects.
 
 ## Headers and caching
