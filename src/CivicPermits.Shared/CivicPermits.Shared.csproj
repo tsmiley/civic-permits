@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contracts shared by the API and its clients: plain records, no behaviour, no dependencies. -->
+  <PropertyGroup>
+    <RootNamespace>CivicPermits.Shared</RootNamespace>
+    <!-- CA1716 warns that "Shared" is a Visual Basic keyword. The project name is fixed by the architecture and this repository is C# only. -->
+    <NoWarn>$(NoWarn);CA1716</NoWarn>
+  </PropertyGroup>
+
+</Project>

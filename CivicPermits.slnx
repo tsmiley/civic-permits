@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CivicPermits.Api/CivicPermits.Api.csproj" />
+    <Project Path="src/CivicPermits.Application/CivicPermits.Application.csproj" />
+    <Project Path="src/CivicPermits.Domain/CivicPermits.Domain.csproj" />
+    <Project Path="src/CivicPermits.Infrastructure/CivicPermits.Infrastructure.csproj" />
+    <Project Path="src/CivicPermits.Shared/CivicPermits.Shared.csproj" />
+    <Project Path="src/CivicPermits.Web/CivicPermits.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CivicPermits.Api.IntegrationTests/CivicPermits.Api.IntegrationTests.csproj" />
+    <Project Path="tests/CivicPermits.Application.Tests/CivicPermits.Application.Tests.csproj" />
+    <Project Path="tests/CivicPermits.Domain.Tests/CivicPermits.Domain.Tests.csproj" />
+    <Project Path="tests/CivicPermits.Web.A11yTests/CivicPermits.Web.A11yTests.csproj" />
+  </Folder>
+</Solution>

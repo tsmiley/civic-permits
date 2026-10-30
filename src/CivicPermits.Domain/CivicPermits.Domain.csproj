@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The domain depends on nothing: no framework packages, no other projects. -->
+  <PropertyGroup>
+    <RootNamespace>CivicPermits.Domain</RootNamespace>
+  </PropertyGroup>
+
+</Project>

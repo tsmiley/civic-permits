@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>CivicPermits.Api</RootNamespace>
+    <UserSecretsId>civic-permits-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CivicPermits.Application\CivicPermits.Application.csproj" />
+    <ProjectReference Include="..\CivicPermits.Infrastructure\CivicPermits.Infrastructure.csproj" />
+    <ProjectReference Include="..\CivicPermits.Shared\CivicPermits.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+</Project>
