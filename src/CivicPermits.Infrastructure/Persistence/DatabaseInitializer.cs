@@ -1,3 +1,4 @@
+using CivicPermits.Infrastructure.Identity;
 using CivicPermits.Infrastructure.Persistence.Seeding;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -40,16 +41,27 @@ public static partial class DatabaseInitializer
         await database.Database.MigrateAsync(cancellationToken);
         LogMigrated(logger, options.Provider);
 
+        await services.GetRequiredService<IdentityBootstrapper>().EnsureRolesAsync();
+
         if (options.SeedSampleData)
         {
             (int types, int applications) = await new SampleDataSeeder(database, services.GetRequiredService<TimeProvider>())
                 .SeedAsync(cancellationToken);
             LogSeeded(logger, types, applications);
+
+            if (!string.IsNullOrEmpty(options.SampleUserPassword))
+            {
+                int people = await services.GetRequiredService<IdentityBootstrapper>().EnsureSampleUsersAsync(options.SampleUserPassword);
+                LogSampleUsers(logger, people);
+            }
         }
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Database migrations are up to date ({Provider}).")]
     private static partial void LogMigrated(ILogger logger, DatabaseProvider provider);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sample sign-ins: created {People}.")]
+    private static partial void LogSampleUsers(ILogger logger, int people);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Sample data: added {PermitTypes} permit types and {Applications} applications.")]
     private static partial void LogSeeded(ILogger logger, int permitTypes, int applications);

@@ -10,6 +10,9 @@ internal sealed class SqliteTestDatabase : IDisposable
 {
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"civic-permits-test-{Guid.NewGuid():N}.db");
 
+    /// <summary>The database file.</summary>
+    public string FilePath => _path;
+
     /// <summary>A fixed afternoon, so sample data always lands on the same dates.</summary>
     public static readonly DateTimeOffset SeedTime = new(2026, 11, 2, 15, 0, 0, TimeSpan.Zero);
 

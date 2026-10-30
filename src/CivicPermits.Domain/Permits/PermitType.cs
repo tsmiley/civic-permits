@@ -65,10 +65,32 @@ public sealed class PermitType
         int validityDays,
         int targetReviewDays)
     {
+        DomainRuleException.Require(id != Guid.Empty, "permit_type.id", "A permit type needs an identifier.");
+
+        PermitType type = new() { Id = id, IsActive = true };
+        type.Revise(category, name, description, baseFee, valuationRateBasisPoints, requiresInspection, validityDays, targetReviewDays);
+
+        return type;
+    }
+
+    /// <summary>
+    /// Changes what the type says and charges. Applications already submitted keep the fee they were assessed;
+    /// only later submissions use the new rules.
+    /// </summary>
+    /// <exception cref="DomainRuleException">A value is out of range or missing.</exception>
+    public void Revise(
+        PermitCategory category,
+        string? name,
+        string? description,
+        Money baseFee,
+        int valuationRateBasisPoints,
+        bool requiresInspection,
+        int validityDays,
+        int targetReviewDays)
+    {
         string trimmedName = name?.Trim() ?? string.Empty;
         string trimmedDescription = description?.Trim() ?? string.Empty;
 
-        DomainRuleException.Require(id != Guid.Empty, "permit_type.id", "A permit type needs an identifier.");
         DomainRuleException.Require(Enum.IsDefined(category), "permit_type.category", "Choose a permit category.");
         DomainRuleException.Require(trimmedName.Length is >= 3 and <= 80, "permit_type.name", "The name must be 3 to 80 characters.");
         DomainRuleException.Require(trimmedDescription.Length is >= 10 and <= 500, "permit_type.description", "The description must be 10 to 500 characters.");
@@ -79,19 +101,14 @@ public sealed class PermitType
         DomainRuleException.Require(validityDays is >= 30 and <= 3_650, "permit_type.validity", "A permit must stay valid for 30 to 3,650 days.");
         DomainRuleException.Require(targetReviewDays is >= 1 and <= 90, "permit_type.review_days", "The review target must be 1 to 90 days.");
 
-        return new PermitType
-        {
-            Id = id,
-            Category = category,
-            Name = trimmedName,
-            Description = trimmedDescription,
-            BaseFee = baseFee,
-            ValuationRateBasisPoints = valuationRateBasisPoints,
-            RequiresInspection = requiresInspection,
-            ValidityDays = validityDays,
-            TargetReviewDays = targetReviewDays,
-            IsActive = true,
-        };
+        Category = category;
+        Name = trimmedName;
+        Description = trimmedDescription;
+        BaseFee = baseFee;
+        ValuationRateBasisPoints = valuationRateBasisPoints;
+        RequiresInspection = requiresInspection;
+        ValidityDays = validityDays;
+        TargetReviewDays = targetReviewDays;
     }
 
     /// <summary>The fee for a project of the declared value: the base fee plus the value-based share.</summary>

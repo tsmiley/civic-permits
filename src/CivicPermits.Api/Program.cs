@@ -1,11 +1,15 @@
 using CivicPermits.Api.Endpoints;
+using CivicPermits.Api.Problems;
+using CivicPermits.Api.Security;
 using CivicPermits.Infrastructure.Hosting;
 using CivicPermits.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.AddCivicPermitsHosting();
-builder.Services.AddOpenApi();
+builder.Services.AddCivicPermitsSecurity();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddOpenApi(options => options.AddBearerSecurity());
 
 WebApplication app = builder.Build();
 
@@ -13,9 +17,13 @@ await app.InitializeDatabaseAsync();
 
 app.UseCivicPermitsCommon(SecurityHeadersPolicy.ForApi);
 
-// Unhandled exceptions become an RFC 9457 problem document with no stack trace and no exception text.
+// Expected failures become problem documents with a stable code; anything else becomes a bare 500.
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+
+app.UseAuthentication();
+app.UseRateLimiter();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -23,7 +31,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapCivicPermitsHealth();
-app.MapGroup("/api/v1").MapSystemEndpoints();
+
+RouteGroupBuilder api = app.MapGroup("/api/v1");
+api.MapSystemEndpoints();
+api.MapAuthEndpoints();
+api.MapPermitEndpoints();
 
 app.Run();
 
