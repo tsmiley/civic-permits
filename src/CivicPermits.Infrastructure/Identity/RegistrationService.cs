@@ -65,8 +65,29 @@ public sealed class RegistrationService(UserManager<ApplicationUser> users)
                 : new RegistrationOutcome(new Dictionary<string, string[]> { ["password"] = fixable });
         }
 
-        await users.AddToRoleAsync(person, nameof(ActorRole.Applicant));
+        // An account with no role could sign in and do nothing, which is a worse failure than none. If the role cannot
+        // be given, undo the account and say so loudly. The usual cause is that the roles were never created (a
+        // deployment that skipped them), and Identity reports that by throwing, not by returning a failure.
+        string failure;
 
-        return new RegistrationOutcome(new Dictionary<string, string[]>());
+        try
+        {
+            IdentityResult assigned = await users.AddToRoleAsync(person, nameof(ActorRole.Applicant));
+
+            if (assigned.Succeeded)
+            {
+                return new RegistrationOutcome(new Dictionary<string, string[]>());
+            }
+
+            failure = string.Join("; ", assigned.Errors.Select(error => error.Code));
+        }
+        catch (InvalidOperationException problem)
+        {
+            failure = problem.Message;
+        }
+
+        await users.DeleteAsync(person);
+
+        throw new InvalidOperationException($"Could not give a new account the {nameof(ActorRole.Applicant)} role, so it was removed: {failure}");
     }
 }

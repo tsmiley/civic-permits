@@ -21,6 +21,7 @@ internal static class AuthEndpoints
         RouteGroupBuilder auth = group.MapGroup("/auth").WithTags("Authentication");
 
         auth.MapPost("/register", RegisterAsync)
+            .AllowAnonymous()
             .RequireRateLimiting(RateLimits.Auth)
             .WithName("Register")
             .WithSummary("Makes an applicant account.")
@@ -30,6 +31,7 @@ internal static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         auth.MapPost("/login", LoginAsync)
+            .AllowAnonymous()
             .RequireRateLimiting(RateLimits.Auth)
             .WithName("Login")
             .WithSummary("Signs in and returns a bearer token.")
@@ -39,6 +41,7 @@ internal static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         auth.MapPost("/refresh", RefreshAsync)
+            .AllowAnonymous()
             .RequireRateLimiting(RateLimits.Auth)
             .WithName("RefreshToken")
             .WithSummary("Exchanges a refresh token for a new access token.")
@@ -65,18 +68,42 @@ internal static class AuthEndpoints
             : ValidationFailed(outcome.Errors.ToDictionary(pair => pair.Key, pair => pair.Value));
     }
 
-    private static async Task<IResult> LoginAsync(LoginRequest? request, SignInManager<ApplicationUser> signIn)
+    private static async Task<IResult> LoginAsync(
+        LoginRequest? request,
+        SignInManager<ApplicationUser> signIn,
+        UserManager<ApplicationUser> users,
+        AbsentAccountTiming timing,
+        HttpContext http)
     {
         if (string.IsNullOrWhiteSpace(request?.Email) || string.IsNullOrEmpty(request.Password))
         {
             return Rejected();
         }
 
+        ApplicationUser? person = await users.FindByNameAsync(request.Email.Trim());
+
+        if (person is null)
+        {
+            // An address nobody registered costs as much as one that exists, so the speed of the answer says nothing.
+            timing.SpendTheTimeOfACheck(request.Password);
+
+            return Rejected();
+        }
+
         // Signing in through the bearer scheme makes the handler write the token response itself.
         signIn.AuthenticationScheme = IdentityConstants.BearerScheme;
-        SignInResult result = await signIn.PasswordSignInAsync(request.Email.Trim(), request.Password, isPersistent: false, lockoutOnFailure: true);
+        SignInResult result = await signIn.PasswordSignInAsync(person, request.Password, isPersistent: false, lockoutOnFailure: true);
 
-        return result.Succeeded ? TypedResults.Empty : Rejected();
+        if (!result.Succeeded)
+        {
+            // For the refusal log: which account was attacked, by identifier, never by address.
+            http.Items[RefusalLogMiddleware.AccountKey] = person.Id.ToString();
+            http.Items[RefusalLogMiddleware.CodeKey] = "auth.sign_in_failed";
+
+            return Rejected();
+        }
+
+        return TypedResults.Empty;
     }
 
     private static async Task<IResult> RefreshAsync(

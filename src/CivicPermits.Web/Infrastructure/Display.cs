@@ -95,8 +95,7 @@ internal static class Display
         !string.IsNullOrEmpty(target)
         && target[0] == '/'
         && (target.Length == 1 || (target[1] != '/' && target[1] != '\\'))
-        && !target.Contains('\n', StringComparison.Ordinal)
-        && !target.Contains('\r', StringComparison.Ordinal)
+        && !target.Any(char.IsControl)
             ? target
             : null;
 }

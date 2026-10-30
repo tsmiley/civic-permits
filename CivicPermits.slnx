@@ -15,5 +15,6 @@
     <Project Path="tests/CivicPermits.Domain.Tests/CivicPermits.Domain.Tests.csproj" />
     <Project Path="tests/CivicPermits.Infrastructure.Tests/CivicPermits.Infrastructure.Tests.csproj" />
     <Project Path="tests/CivicPermits.Web.A11yTests/CivicPermits.Web.A11yTests.csproj" />
+    <Project Path="tests/CivicPermits.Web.IntegrationTests/CivicPermits.Web.IntegrationTests.csproj" />
   </Folder>
 </Solution>

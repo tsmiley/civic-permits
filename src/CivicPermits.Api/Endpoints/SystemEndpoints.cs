@@ -10,6 +10,7 @@ internal static class SystemEndpoints
     public static RouteGroupBuilder MapSystemEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/info", GetInfoAsync)
+            .AllowAnonymous()
             .WithName("GetApplicationInfo")
             .WithSummary("Describes the running service.")
             .WithDescription("Returns the product name, the version of the running API and the server's UTC time. Needs no sign-in.")

@@ -38,6 +38,6 @@ internal sealed partial class CorrelationIdMiddleware(RequestDelegate next)
     }
 
     // A caller-supplied value ends up in logs and headers, so it is restricted to a safe, short alphabet.
-    [GeneratedRegex("^[A-Za-z0-9-]{8,64}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
+    [GeneratedRegex("^[A-Za-z0-9-]{8,64}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
     private static partial Regex Acceptable();
 }

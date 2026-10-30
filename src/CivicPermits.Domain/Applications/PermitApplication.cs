@@ -207,6 +207,9 @@ public sealed class PermitApplication
     {
         WorkflowTransition step = Authorize(ApplicationAction.Withdraw, actor);
 
+        // Nobody should visit, or record a result for, work the applicant has called off.
+        CloseOpenInspections("The application was withdrawn.", now);
+
         Apply(step, actor, now, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim());
     }
 
@@ -242,6 +245,9 @@ public sealed class PermitApplication
 
         IssuedOn = now;
         ExpiresOn = DateOnly.FromDateTime(now.UtcDateTime).AddDays(permitType.ValidityDays);
+
+        // An inspection booked after the one that passed has no purpose once the permit is issued.
+        CloseOpenInspections("The permit was issued.", now);
 
         Apply(step, actor, now, note: null);
     }
@@ -305,6 +311,14 @@ public sealed class PermitApplication
         inspection.Close(InspectionStatus.Cancelled, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(), now);
     }
 
+    private void CloseOpenInspections(string reason, DateTimeOffset now)
+    {
+        foreach (Inspection inspection in _inspections.Where(candidate => candidate.Status == InspectionStatus.Scheduled))
+        {
+            inspection.Close(InspectionStatus.Cancelled, reason, now);
+        }
+    }
+
     private bool LatestInspectionPassed =>
         _inspections
             .Where(inspection => inspection.Status is InspectionStatus.Passed or InspectionStatus.Failed)
@@ -357,9 +371,17 @@ public sealed class PermitApplication
         DeclaredValuation = declaredValuation;
     }
 
-    /// <summary>Checks the step exists, the role may take it, and an applicant owns the application.</summary>
+    /// <summary>
+    /// Checks, in this order: an applicant owns the application (so a stranger learns nothing about it, not even its
+    /// status, from the answer); the workflow allows the step from the current status; the role may take it.
+    /// </summary>
     private WorkflowTransition Authorize(ApplicationAction action, Actor actor)
     {
+        if (actor.Role == ActorRole.Applicant)
+        {
+            RequireOwner(actor);
+        }
+
         WorkflowTransition step = ApplicationWorkflow.Find(Status, action)
             ?? throw new DomainRuleException(
                 "workflow.transition_not_allowed",
@@ -369,11 +391,6 @@ public sealed class PermitApplication
             step.Roles.Contains(actor.Role),
             "workflow.role_not_allowed",
             $"A person acting as {actor.Role.ToString().ToUpperInvariant()} may not do this.");
-
-        if (actor.Role == ActorRole.Applicant)
-        {
-            RequireOwner(actor);
-        }
 
         return step;
     }

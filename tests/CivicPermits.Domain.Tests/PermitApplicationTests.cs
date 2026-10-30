@@ -432,6 +432,121 @@ public class PermitApplicationTests
         Assert.Null(application.DecidedOn);
     }
 
+    [Theory]
+    [InlineData(ApplicationStatus.Draft)]
+    [InlineData(ApplicationStatus.Submitted)]
+    [InlineData(ApplicationStatus.InReview)]
+    [InlineData(ApplicationStatus.Approved)]
+    [InlineData(ApplicationStatus.Issued)]
+    public void A_stranger_is_told_the_same_thing_whatever_the_status_of_someone_elses_application(ApplicationStatus status)
+    {
+        PermitType type = Sample.BuildingPermit(requiresInspection: false);
+        PermitApplication application = status switch
+        {
+            ApplicationStatus.Draft => Sample.Draft(type),
+            ApplicationStatus.Submitted => Sample.Submitted(type),
+            ApplicationStatus.InReview => Sample.InReview(type),
+            ApplicationStatus.Approved => Sample.Approved(type),
+            _ => IssuedApplication(type),
+        };
+
+        foreach (ApplicationAction action in Enum.GetValues<ApplicationAction>())
+        {
+            DomainRuleException failure = Assert.Throws<DomainRuleException>(() => Attempt(application, type, action, Sample.OtherApplicant));
+
+            // Not "cannot be approved while it is a draft": that would reveal the status to someone who may not know the application exists.
+            Assert.Equal("workflow.not_your_application", failure.Code);
+            Assert.DoesNotContain("draft", failure.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("approved", failure.Message, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private static PermitApplication IssuedApplication(PermitType type)
+    {
+        PermitApplication application = Sample.Approved(type);
+        application.RecordFeePayment(Sample.Clerk, Sample.Now.AddHours(3));
+        application.Issue(Sample.Clerk, type, Sample.Now.AddHours(4));
+
+        return application;
+    }
+
+    private static void Attempt(PermitApplication application, PermitType type, ApplicationAction action, Actor actor)
+    {
+        DateTimeOffset now = Sample.Now.AddDays(3);
+
+        switch (action)
+        {
+            case ApplicationAction.Submit:
+                application.Submit(actor, type, Sample.Number, now);
+                break;
+            case ApplicationAction.StartReview:
+                application.StartReview(actor, now);
+                break;
+            case ApplicationAction.RequestCorrections:
+                application.RequestCorrections(actor, "Please add the lot dimensions.", now);
+                break;
+            case ApplicationAction.Approve:
+                application.Approve(actor, null, now);
+                break;
+            case ApplicationAction.Deny:
+                application.Deny(actor, "The lot is in a protected area.", now);
+                break;
+            case ApplicationAction.Issue:
+                application.Issue(actor, type, now);
+                break;
+            default:
+                application.Withdraw(actor, null, now);
+                break;
+        }
+    }
+
+    [Fact]
+    public void Withdrawing_closes_a_booked_inspection_so_its_result_can_no_longer_be_recorded()
+    {
+        PermitApplication application = Sample.Approved();
+        Inspection booked = application.ScheduleInspection(Sample.Clerk, Sample.Inspector.Id, Sample.Now.AddDays(3), Sample.Now.AddHours(3));
+
+        application.Withdraw(Sample.Applicant, "We are selling the house.", Sample.Now.AddHours(4));
+
+        Assert.Equal(ApplicationStatus.Withdrawn, application.Status);
+        Assert.Equal(InspectionStatus.Cancelled, booked.Status);
+        Assert.Equal(Sample.Now.AddHours(4), booked.ClosedOn);
+        Assert.Equal("The application was withdrawn.", booked.Notes);
+        Assert.Equal(
+            "inspection.closed",
+            Assert.Throws<DomainRuleException>(() => application.RecordInspectionResult(
+                Sample.Inspector, booked.Id, passed: true, null, Sample.Now.AddDays(3))).Code);
+    }
+
+    [Fact]
+    public void Withdrawing_leaves_inspections_that_were_already_decided_exactly_as_they_were()
+    {
+        PermitApplication application = Sample.Approved();
+        Inspection failed = application.ScheduleInspection(Sample.Clerk, Sample.Inspector.Id, Sample.Now.AddDays(3), Sample.Now.AddHours(3));
+        application.RecordInspectionResult(Sample.Inspector, failed.Id, passed: false, "The guard rail is too low.", Sample.Now.AddDays(3));
+
+        application.Withdraw(Sample.Applicant, null, Sample.Now.AddDays(4));
+
+        Assert.Equal(InspectionStatus.Failed, failed.Status);
+        Assert.Equal("The guard rail is too low.", failed.Notes);
+    }
+
+    [Fact]
+    public void Issuing_closes_an_inspection_that_was_booked_after_the_one_that_passed()
+    {
+        PermitType type = Sample.BuildingPermit();
+        PermitApplication application = Sample.Approved(type);
+        application.RecordFeePayment(Sample.Clerk, Sample.Now.AddHours(3));
+        Inspection passed = application.ScheduleInspection(Sample.Clerk, Sample.Inspector.Id, Sample.Now.AddDays(3), Sample.Now.AddHours(4));
+        application.RecordInspectionResult(Sample.Inspector, passed.Id, passed: true, null, Sample.Now.AddDays(3));
+        Inspection extra = application.ScheduleInspection(Sample.Clerk, Sample.OtherInspector.Id, Sample.Now.AddDays(10), Sample.Now.AddDays(3));
+
+        application.Issue(Sample.Clerk, type, Sample.Now.AddDays(4));
+
+        Assert.Equal(InspectionStatus.Cancelled, extra.Status);
+        Assert.Equal(InspectionStatus.Passed, passed.Status);
+    }
+
     // ---- Inspections ----
 
     [Fact]

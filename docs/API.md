@@ -62,7 +62,7 @@ request's correlation id (also in the `X-Correlation-Id` header):
 |---|---|---|
 | 400 | The body could not be read | `request.malformed` |
 | 401 | Not signed in | `request.unauthorized` |
-| 403 | Signed in, but the role may not do this | `workflow.role_not_allowed`, `request.forbidden` |
+| 403 | Signed in, but the role may not do this | `workflow.role_not_allowed`, `request.forbidden`, `inspection.not_assigned` |
 | 404 | Not found, or not yours to know about | `application.not_found`, `permit.not_found`, `permit_type.not_found` |
 | 409 | Right request, wrong moment, or a clash | `workflow.transition_not_allowed`, `issue.fee_unpaid`, `issue.inspection_not_passed`, `payment.already_recorded`, `request.concurrent_change`, `permit_type.name_in_use` |
 | 422 | A value is out of range or missing | `address.postal_code`, `application.description`, `application.reason_required`, `permit_type.valuation_rate` |
@@ -84,8 +84,20 @@ request's correlation id (also in the `X-Correlation-Id` header):
 | Public | `GET /public/permits/{number}` | anyone; rate limited; type, status and dates only |
 | System | `GET /info`, `/health/live`, `/health/ready` | anyone |
 
-A step that the workflow does not allow in the application's current status is a 409, whoever asks; the full table is
+Only the operations marked "anyone" above, plus sign-in, refresh, registration and the OpenAPI document, are open to a
+person who is not signed in; every other address, including one that does not exist, answers a signed-out caller with
+401. A test pins that list, so a new endpoint is closed until someone opens it on purpose. Each applicant step needs
+the Applicant role and each staff step the Staff policy at the endpoint, as well as in the aggregate.
+
+A step that the workflow does not allow in the application's current status is a 409 for the person whose step it is;
+an applicant who does not own the application gets the same answer whatever the status. The full table is
 in [ARCHITECTURE.md](ARCHITECTURE.md#the-workflow).
+
+## What every response carries
+
+Every response, including errors and the OpenAPI document, carries the security headers in
+[DEPLOYMENT.md](DEPLOYMENT.md#headers-and-caching), and no `Server` header. Every response under `/api` also carries
+`Cache-Control: no-store`, so a person's own applications never sit in a shared or browser cache.
 
 ## Money, dates and numbers
 

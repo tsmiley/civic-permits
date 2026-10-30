@@ -2,6 +2,8 @@
 @attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(CivicPermits.Infrastructure.Hosting.RateLimits.Auth)]
 @inherits CivicPage
 @inject Microsoft.AspNetCore.Identity.SignInManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> SignIn
+@inject Microsoft.AspNetCore.Identity.UserManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> Users
+@inject CivicPermits.Infrastructure.Identity.AbsentAccountTiming Timing
 
 <PageTitle>@(HasProblems ? "Error: " : "")Sign in - Civic Permits</PageTitle>
 
@@ -55,10 +57,32 @@
             return;
         }
 
-        Microsoft.AspNetCore.Identity.SignInResult result = await SignIn.PasswordSignInAsync(email, password, isPersistent: false, lockoutOnFailure: true);
+        CivicPermits.Infrastructure.Persistence.ApplicationUser? person = await Users.FindByNameAsync(email);
+        Microsoft.AspNetCore.Identity.SignInResult? result = null;
 
-        if (!result.Succeeded)
+        if (person is null)
         {
+            // An address nobody registered costs as much as one that exists, so the speed of the answer says nothing.
+            Timing.SpendTheTimeOfACheck(password);
+        }
+        else
+        {
+            result = await SignIn.PasswordSignInAsync(person, password, isPersistent: false, lockoutOnFailure: true);
+        }
+
+        if (result is not { Succeeded: true })
+        {
+            // For the refusal log: which account was attacked, by identifier, never by address.
+            if (Http is not null)
+            {
+                Http.Items[CivicPermits.Infrastructure.Hosting.RefusalLogMiddleware.CodeKey] = "auth.sign_in_failed";
+
+                if (person is not null)
+                {
+                    Http.Items[CivicPermits.Infrastructure.Hosting.RefusalLogMiddleware.AccountKey] = person.Id.ToString();
+                }
+            }
+
             // One message for a wrong password, an unknown address and a locked account, so the page cannot be used
             // to find out who has an account.
             Problems.Add(new FormProblem("email", "The email address or password is not right."));

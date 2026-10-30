@@ -1,5 +1,6 @@
 using CivicPermits.Application.Abstractions;
 using CivicPermits.Domain.Common;
+using CivicPermits.Infrastructure.Hosting;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace CivicPermits.Api.Problems;
@@ -46,6 +47,18 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problems) : IEx
 
         httpContext.Response.StatusCode = status;
 
+        // A refusal is logged by the refusal middleware, which needs to know why: the code is the stable reason.
+        if (status is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden or StatusCodes.Status404NotFound)
+        {
+            httpContext.Items[RefusalLogMiddleware.CodeKey] = code;
+
+            // The exception handler clears the matched endpoint; the feature remembers it.
+            if (httpContext.Features.Get<IExceptionHandlerFeature>()?.Endpoint is RouteEndpoint endpoint)
+            {
+                httpContext.Items[RefusalLogMiddleware.RouteKey] = endpoint.RoutePattern.RawText;
+            }
+        }
+
         return await problems.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
@@ -62,7 +75,7 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problems) : IEx
 
     private static (int, string, string, string) MapRule(DomainRuleException rule) => rule.Code switch
     {
-        "workflow.role_not_allowed" => (StatusCodes.Status403Forbidden, "Not allowed", rule.Message, rule.Code),
+        "workflow.role_not_allowed" or "inspection.not_assigned" => (StatusCodes.Status403Forbidden, "Not allowed", rule.Message, rule.Code),
         "workflow.not_your_application" or "inspection.unknown" => (StatusCodes.Status404NotFound, "Not found", "That was not found.", rule.Code),
         _ when StateConflicts.Contains(rule.Code) => (StatusCodes.Status409Conflict, "Not possible now", rule.Message, rule.Code),
         _ => (StatusCodes.Status422UnprocessableEntity, "Check what you entered", rule.Message, rule.Code),

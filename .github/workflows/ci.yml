@@ -47,7 +47,7 @@ jobs:
       - name: Test
         shell: bash
         run: |
-          for project in Domain.Tests Application.Tests Infrastructure.Tests Api.IntegrationTests Web.A11yTests; do
+          for project in Domain.Tests Application.Tests Infrastructure.Tests Api.IntegrationTests Web.IntegrationTests Web.A11yTests; do
             dotnet test "tests/CivicPermits.$project" --no-build
           done
 

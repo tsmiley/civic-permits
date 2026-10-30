@@ -28,7 +28,9 @@ private project.** The town, people, addresses and permits in the sample data ar
   what has *not* been done: no manual screen-reader run is recorded and nothing is certified
   ([report](docs/ACCESSIBILITY_REPORT.md), [procedure](docs/ACCESSIBILITY_TESTING.md)).
 - **Security that is designed, tested and written down.** Access decided in one place, errors that reveal nothing,
-  sign-in that answers the same for an unknown address and a wrong password, concurrency guarded in the database
+  sign-in that answers the same, and does the same work, for an unknown address and a wrong password; an API that
+  requires a sign-in unless an operation is listed as public; concurrency guarded in the database for applications and
+  permit numbers (permit-type edits are last-write-wins)
   ([threat model](docs/THREAT_MODEL.md), [ledger](docs/SECURITY_LEDGER.md)).
 - **Two databases.** SQLite by default (nothing to install), SQL Server by configuration, one migration history each, and
   a test that fails when the model and a provider's migrations disagree. The SQLite tests run everywhere; the SQL Server
@@ -124,10 +126,11 @@ The pages work without JavaScript and reflow to a 320 px screen; the small scrip
 
 Tests: `Domain.Tests` and `Application.Tests` (unit), `Infrastructure.Tests` (migrations, seeding and constraints
 against real SQLite and, where installed, SQL Server LocalDB), `Api.IntegrationTests` (the real API in memory),
-`Web.A11yTests` (a real browser driving the running site, including the axe-core sweep). Run each project in turn:
+`Web.IntegrationTests` (the real site in memory: cookies, sign-in, caching, headers), `Web.A11yTests` (a real browser
+driving the running site, including the axe-core sweep). Run each project in turn:
 
 ```bash
-for project in Domain.Tests Application.Tests Infrastructure.Tests Api.IntegrationTests Web.A11yTests; do
+for project in Domain.Tests Application.Tests Infrastructure.Tests Api.IntegrationTests Web.IntegrationTests Web.A11yTests; do
   dotnet test "tests/CivicPermits.$project"
 done
 ```

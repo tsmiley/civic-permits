@@ -26,6 +26,14 @@
     private async Task SignOutAsync()
     {
         await SignIn.SignOutAsync();
+
+        // Tell the browser to forget what it holds for this site: cached pages, cookies and stored data, so the next
+        // person on a shared computer finds nothing of the last one.
+        if (Http is { Response.HasStarted: false })
+        {
+            Http.Response.Headers["Clear-Site-Data"] = "\"cache\", \"cookies\", \"storage\"";
+        }
+
         Navigation.NavigateTo("/");
     }
 }

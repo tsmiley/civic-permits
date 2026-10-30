@@ -196,6 +196,37 @@ public class ConcurrencyAndIdentityTests
     }
 
     [Fact]
+    public async Task Registering_when_the_roles_were_never_created_fails_loudly_and_leaves_no_account_behind()
+    {
+        using SqliteTestDatabase database = await SqliteTestDatabase.MigratedAsync();
+        ServiceCollection services = [];
+        services.AddLogging();
+        services.AddInfrastructure(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Database:Provider"] = "Sqlite",
+            ["Database:ConnectionString"] = $"Data Source={database.FilePath}",
+        }).Build());
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        RegistrationService registration = scope.ServiceProvider.GetRequiredService<RegistrationService>();
+        UserManager<ApplicationUser> users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        // No EnsureRolesAsync: the database has migrations but no roles.
+        InvalidOperationException failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => registration.RegisterApplicantAsync("someone@bramblewick.test", $"Aa1-{Guid.NewGuid():N}", "Someone"));
+
+        Assert.Contains("Applicant", failure.Message, StringComparison.Ordinal);
+        Assert.Null(await users.FindByEmailAsync("someone@bramblewick.test"));
+
+        // With the roles in place the same request succeeds.
+        await scope.ServiceProvider.GetRequiredService<IdentityBootstrapper>().EnsureRolesAsync();
+        RegistrationOutcome outcome = await registration.RegisterApplicantAsync("someone@bramblewick.test", $"Aa1-{Guid.NewGuid():N}", "Someone");
+
+        Assert.True(outcome.Accepted);
+        Assert.True(await users.IsInRoleAsync((await users.FindByEmailAsync("someone@bramblewick.test"))!, "Applicant"));
+    }
+
+    [Fact]
     public async Task A_sample_password_that_is_too_short_stops_the_host_from_starting()
     {
         ServiceCollection services = [];

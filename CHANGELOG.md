@@ -5,6 +5,22 @@ All notable changes are recorded here, newest first. The format follows
 
 ## [Unreleased]
 
+### Security
+- Hardening after the independent review of S0 to S4. An applicant who does not own an application now gets the same
+  refusal whatever its status; withdrawing or issuing cancels inspections still scheduled. The API is closed by
+  default (a fallback policy requires a sign-in; ten operations are public and a test pins the list), and each
+  applicant and staff step is also guarded by policy at the endpoint. Everything under `/api`, every page a signed-in
+  person receives and the account pages are `Cache-Control: no-store`; signing out sends `Clear-Site-Data`. Two more
+  security headers, and no `Server` header. An unknown address now costs the same password check as a wrong password
+  on both the API and the site. A refused request leaves one log line with the account id, route, status and code.
+  A failed role assignment at registration removes the new account instead of leaving it. The dispatcher surfaces a
+  handler's own exception and tells apart a request that is two kinds of request. The correlation-id pattern refuses a
+  trailing newline; the return-address check refuses every control character.
+- Tests: a new `Web.IntegrationTests` project for the site's cookies, caching, headers and sign-in behaviour; hardening
+  tests in `Api.IntegrationTests`; a real-Kestrel header test; the accessibility canary now also proves the assertion
+  fails when it should and that each axe tag in use finds something, and ignores only a cancelled page navigation.
+- The security ledger has an Owner column and a row for the review.
+
 ### Added
 - S5: the documentation slice. A rewritten README with screenshots (generated from the running site, with text
   alternatives) and the work-in-progress banner removed; `docs/ARCHITECTURE.md` with the dependency rule, request

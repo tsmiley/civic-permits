@@ -19,6 +19,8 @@ internal sealed class SecurityHeadersMiddleware(RequestDelegate next, SecurityHe
             headers["Referrer-Policy"] = "no-referrer";
             headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
             headers["Cross-Origin-Opener-Policy"] = "same-origin";
+            headers["Cross-Origin-Resource-Policy"] = "same-site";
+            headers["X-Permitted-Cross-Domain-Policies"] = "none";
 
             return Task.CompletedTask;
         }, (context, policy));

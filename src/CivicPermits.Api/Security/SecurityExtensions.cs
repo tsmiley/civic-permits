@@ -1,5 +1,6 @@
 using CivicPermits.Domain.Applications;
 using CivicPermits.Infrastructure.Hosting;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 
 namespace CivicPermits.Api.Security;
@@ -30,7 +31,9 @@ internal static class SecurityExtensions
             });
 
         services.AddAuthorizationBuilder()
-            .SetFallbackPolicy(null)
+            // Authenticated by default: an endpoint added later without a policy is closed, not open. The eight public
+            // operations say so explicitly with AllowAnonymous, and a test pins exactly that set.
+            .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(Policies.SignedIn, policy => policy.RequireAuthenticatedUser())
             .AddPolicy(Policies.Staff, policy => policy.RequireRole(nameof(ActorRole.Clerk), nameof(ActorRole.Administrator)))
             .AddPolicy(Policies.Administrator, policy => policy.RequireRole(nameof(ActorRole.Administrator)))

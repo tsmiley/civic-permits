@@ -3,6 +3,7 @@ using CivicPermits.Application;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -21,13 +22,19 @@ public static class HostingExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        // The server name and version help only someone choosing which known flaw to try.
+        builder.Services.Configure<KestrelServerOptions>(kestrel => kestrel.AddServerHeader = false);
+
         builder.Host.UseSerilog((context, services, logger) => logger
             .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} {Message:lj}{NewLine}{Exception}",
-                formatProvider: CultureInfo.InvariantCulture));
+                formatProvider: CultureInfo.InvariantCulture),
+            // Each host keeps its own logger instead of replacing the process-wide one. Two hosts in one process (the
+            // integration tests run dozens at once) would otherwise send each other's log lines to the wrong place.
+            preserveStaticLogger: true);
 
         builder.Services.AddProblemDetails(options =>
             options.CustomizeProblemDetails = context =>
@@ -48,13 +55,15 @@ public static class HostingExtensions
     /// Adds the middleware both hosts need, in the order that matters: the correlation id first so everything
     /// after it is traceable, then the security headers, then request logging.
     /// </summary>
-    public static WebApplication UseCivicPermitsCommon(this WebApplication app, SecurityHeadersPolicy headers)
+    public static WebApplication UseCivicPermitsCommon(this WebApplication app, SecurityHeadersPolicy headers, NoStoreScope noStore)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(headers);
 
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<SecurityHeadersMiddleware>(headers);
+        app.UseMiddleware<NoStoreMiddleware>(noStore);
+        app.UseMiddleware<RefusalLogMiddleware>();
         app.UseSerilogRequestLogging();
 
         if (!app.Environment.IsDevelopment())
@@ -79,7 +88,8 @@ public static class HostingExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = static _ => false });
+        // Health answers anyone: it says only a status word. Marked explicitly because the API is authenticated by default.
+        app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = static _ => false }).AllowAnonymous();
         app.MapHealthChecks("/health/ready", new HealthCheckOptions
         {
             Predicate = static check => check.Tags.Contains(HealthTags.Ready),
@@ -89,7 +99,7 @@ public static class HostingExtensions
                 [HealthStatus.Degraded] = StatusCodes.Status200OK,
                 [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
             },
-        });
+        }).AllowAnonymous();
 
         return app;
     }
