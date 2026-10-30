@@ -6,6 +6,12 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Added
+- S2: use cases for permit types, applications, inspections and the public lookup, behind the dispatcher, with store
+  abstractions implemented in Infrastructure; bearer-token sign-in with Identity, four roles and policies; the REST
+  endpoints with problem-details errors, per-address rate limits, OpenAPI with bearer security; a per-year permit
+  number allocator and an optimistic-concurrency version on applications (a second migration per provider); sample
+  sign-ins from a runtime password; 74 API integration tests.
+- A security ledger (`docs/SECURITY_LEDGER.md`) with its first row.
 - S1: the domain model. Permit types with fee rules, an application aggregate with a workflow held as one table,
   status history, payment recording and inspections; money in whole cents; strict address and number value
   objects; rule violations carry stable codes.

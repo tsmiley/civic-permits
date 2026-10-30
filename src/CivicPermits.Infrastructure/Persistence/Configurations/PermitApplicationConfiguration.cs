@@ -17,6 +17,10 @@ internal sealed class PermitApplicationConfiguration : IEntityTypeConfiguration<
         builder.HasKey(application => application.Id);
         builder.Property(application => application.Id).ValueGeneratedNever();
 
+        // Optimistic concurrency. The domain does not know about it: the context raises it whenever the application
+        // or anything it owns changes, so two people acting on the same application cannot both succeed.
+        builder.Property<long>(CivicPermitsDbContext.VersionProperty).IsConcurrencyToken();
+
         builder.Property(application => application.Status).HasConversion<string>().HasMaxLength(30).IsRequired();
         builder.Property(application => application.ProjectDescription).HasMaxLength(2_000).IsRequired();
         builder.Property(application => application.DecisionNote).HasMaxLength(1_000);

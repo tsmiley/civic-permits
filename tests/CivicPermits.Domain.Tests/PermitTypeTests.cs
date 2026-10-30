@@ -25,6 +25,39 @@ public class PermitTypeTests
     }
 
     [Fact]
+    public void Revising_a_type_replaces_what_it_says_and_charges_and_keeps_its_identity_and_state()
+    {
+        PermitType type = Sample.BuildingPermit();
+        type.Deactivate();
+
+        type.Revise(PermitCategory.Sign, "  Large sign permit ", "A sign bigger than thirty square feet.", Money.FromDollars(90m), 50, false, 180, 6);
+
+        Assert.Equal(Sample.BuildingPermit().Id, type.Id);
+        Assert.False(type.IsActive);
+        Assert.Equal(PermitCategory.Sign, type.Category);
+        Assert.Equal("Large sign permit", type.Name);
+        Assert.Equal(Money.FromDollars(90m), type.BaseFee);
+        Assert.Equal(50, type.ValuationRateBasisPoints);
+        Assert.False(type.RequiresInspection);
+        Assert.Equal(180, type.ValidityDays);
+        Assert.Equal(6, type.TargetReviewDays);
+    }
+
+    [Fact]
+    public void A_revision_that_breaks_a_rule_changes_nothing()
+    {
+        PermitType type = Sample.BuildingPermit();
+
+        DomainRuleException failure = Assert.Throws<DomainRuleException>(
+            () => type.Revise(PermitCategory.Sign, "Large sign permit", "A sign bigger than thirty square feet.", Money.Zero, 5_000, false, 180, 6));
+
+        Assert.Equal("permit_type.valuation_rate", failure.Code);
+        Assert.Equal("Residential building permit", type.Name);
+        Assert.Equal(PermitCategory.Building, type.Category);
+        Assert.Equal(125, type.ValuationRateBasisPoints);
+    }
+
+    [Fact]
     public void A_new_type_is_active_and_can_be_retired_and_restored()
     {
         PermitType type = Sample.BuildingPermit();

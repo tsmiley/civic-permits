@@ -1,3 +1,5 @@
+using CivicPermits.Application.Abstractions;
+using CivicPermits.Infrastructure.Identity;
 using CivicPermits.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +44,10 @@ public static class DependencyInjection
             }
         });
 
+        // The sign-in manager needs the authentication services. Each host adds the schemes it uses (bearer tokens for
+        // the API, cookies for the web site).
+        services.AddAuthentication();
+
         services
             .AddIdentityCore<ApplicationUser>(options =>
             {
@@ -53,7 +59,17 @@ public static class DependencyInjection
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddRoles<IdentityRole<Guid>>()
+            .AddSignInManager()
             .AddEntityFrameworkStores<CivicPermitsDbContext>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IPermitTypeStore, PermitTypeStore>();
+        services.AddScoped<IPermitApplicationStore, PermitApplicationStore>();
+        services.AddScoped<IPermitNumberAllocator, PermitNumberAllocator>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IdentityBootstrapper>();
 
         services
             .AddHealthChecks()

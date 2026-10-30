@@ -109,6 +109,10 @@ namespace CivicPermits.Migrations.Sqlite.Migrations
                     b.Property<DateTime?>("SubmittedOn")
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "SiteAddress", "CivicPermits.Domain.Applications.PermitApplication.SiteAddress#PostalAddress", b1 =>
                         {
                             b1.IsRequired();
@@ -310,6 +314,23 @@ namespace CivicPermits.Migrations.Sqlite.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("CivicPermits.Infrastructure.Persistence.PermitNumberCounter", b =>
+                {
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LastSequence")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Year");
+
+                    b.ToTable("PermitNumberCounters", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PermitNumberCounters_LastSequence", "[LastSequence] >= 0 AND [LastSequence] <= 999999");
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>

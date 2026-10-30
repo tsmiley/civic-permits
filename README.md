@@ -84,6 +84,39 @@ worked out at submission from the permit type (a base amount plus a share of the
 and basis points, never floating point); a permit is issued only once the fee is recorded as paid and, where the
 permit type needs one, the latest inspection has passed; every step is recorded with who took it and when.
 
+## The API
+
+REST under `/api/v1`, documented by the OpenAPI document at `/openapi/v1.json` (Development). Errors are RFC 9457
+problem documents with a stable `code` and a correlation id; an unexpected failure is a bare 500 that names nothing.
+
+| Area | Endpoints | Who |
+|---|---|---|
+| Sign-in | `POST /auth/register`, `/auth/login`, `/auth/refresh`; `GET /auth/me` | anyone (rate limited); `me` needs a token |
+| Permit types | `GET /permit-types[/{id}]` | anyone |
+| | `POST`, `PUT /permit-types[/{id}]`, `POST /permit-types/{id}/open`, `/close` | administrators |
+| Applications | `POST /applications`, `PUT /applications/{id}`, `POST .../submit`, `.../withdraw` | the applicant who owns it |
+| | `POST .../start-review`, `.../request-corrections`, `.../approve`, `.../deny`, `.../issue`, `.../payment`, `.../inspections` | clerks and administrators |
+| | `POST .../inspections/{id}/result` | the assigned inspector, or an administrator |
+| | `GET /applications`, `GET /applications/{id}` | whoever may see them (see below) |
+| Public lookup | `GET /public/permits/{number}` | anyone (rate limited): type, status and dates only |
+
+Who may see an application: an applicant sees their own, staff see all, an inspector sees those with an inspection
+booked for them. To anyone else it does not exist, and the answer is 404, never 403.
+
+How the API stays safe: opaque data-protected bearer tokens (15 minutes, refresh for 8 hours, nothing to sign with so
+no key in configuration); passwords of twelve or more characters, five wrong attempts lock the account for fifteen
+minutes, and a wrong password, an unknown address and a locked account get the same answer; registering an address
+that exists looks exactly like registering a new one; roles are checked by policy at the endpoint and again in the
+handler; every change carries an optimistic-concurrency version so two people cannot both win; permit numbers come
+from a per-year counter saved with the submission, so a failed request never uses one up. In this demonstration
+there is no email confirmation, and bearer tokens are protected with the host's data-protection keys, which a
+multi-instance deployment must share.
+
+Sample sign-ins exist only when `Database:SampleUserPassword` is supplied (an environment variable or user secrets,
+never a file in the repository). Their addresses use the reserved `.test` domain:
+`applicant.one@bramblewick.test`, `clerk@bramblewick.test`, `administrator@bramblewick.test`,
+`inspector.one@bramblewick.test` and so on.
+
 ## Database
 
 SQLite is the default and needs nothing installed. Setting `Database:MigrateOnStartup` applies the migrations
@@ -107,7 +140,7 @@ A test fails if the model and either provider's migrations disagree.
 |---|---|---|
 | S0 | Solution scaffold, hosting, health, problem details, CI | in review |
 | S1 | Domain model, workflow, database, sample data | in review |
-| S2 | Identity, roles, API endpoints | planned |
+| S2 | Identity, roles, API endpoints | in progress |
 | S3 | Web interface | planned |
 | S4 | Automated and manual accessibility testing, report | planned |
 | S5 | Documentation, screenshots, diagrams | planned |

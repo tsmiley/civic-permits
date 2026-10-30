@@ -30,8 +30,33 @@ public sealed class SampleDataSeeder(CivicPermitsDbContext database, TimeProvide
         ];
 
         database.PermitApplications.AddRange(newApplications);
+        await AdvanceNumberCountersAsync(newApplications, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
         return (newTypes.Count, newApplications.Count);
+    }
+
+    /// <summary>
+    /// The sample applications carry numbers the allocator never handed out. Moving each year's counter up to the
+    /// highest of them means the next real submission gets the next free number instead of a duplicate.
+    /// </summary>
+    private async Task AdvanceNumberCountersAsync(IEnumerable<PermitApplication> seeded, CancellationToken cancellationToken)
+    {
+        foreach (var year in seeded.Where(application => application.Number is not null)
+                     .GroupBy(application => application.Number!.Value.Year))
+        {
+            int highest = year.Max(application => application.Number!.Value.Sequence);
+            PermitNumberCounter? counter = await database.Set<PermitNumberCounter>()
+                .FirstOrDefaultAsync(candidate => candidate.Year == year.Key, cancellationToken);
+
+            if (counter is null)
+            {
+                database.Set<PermitNumberCounter>().Add(new PermitNumberCounter { Year = year.Key, LastSequence = highest });
+            }
+            else if (counter.LastSequence < highest)
+            {
+                counter.LastSequence = highest;
+            }
+        }
     }
 }
