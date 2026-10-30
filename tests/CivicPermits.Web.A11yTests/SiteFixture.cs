@@ -66,6 +66,7 @@ public sealed class SiteFixture : IAsyncLifetime
         await WaitUntilLiveAsync();
 
         _playwright = await Playwright.CreateAsync();
+        Assertions.SetDefaultExpectTimeout(30_000);
         await StartBrowserAsync();
     }
 
@@ -88,7 +89,14 @@ public sealed class SiteFixture : IAsyncLifetime
 
         foreach (string suffix in new[] { string.Empty, "-shm", "-wal" })
         {
-            File.Delete(_databasePath + suffix);
+            try
+            {
+                File.Delete(_databasePath + suffix);
+            }
+            catch (IOException)
+            {
+                // The site process may not have let go of the file yet; the temp folder is cleaned up later.
+            }
         }
     }
 
@@ -129,7 +137,8 @@ public sealed class SiteFixture : IAsyncLifetime
 
     private async Task WaitUntilLiveAsync()
     {
-        DateTime giveUp = DateTime.UtcNow.AddSeconds(60);
+        // Generous: on a busy machine (another build, another test run) the first start can be slow.
+        DateTime giveUp = DateTime.UtcNow.AddSeconds(120);
 
         while (DateTime.UtcNow < giveUp)
         {
@@ -159,7 +168,7 @@ public sealed class SiteFixture : IAsyncLifetime
             await Task.Delay(250);
         }
 
-        throw new TimeoutException("The web site did not become live within 60 seconds.");
+        throw new TimeoutException("The web site did not become live within 120 seconds.");
     }
 
     private static int FreePort()

@@ -1,8 +1,9 @@
 # Accessibility report
 
-**Status in one paragraph.** Civic Permits is built and tested against WCAG 2.1 level AA. Every page of the site, in
-every state a person can reach and as every kind of person who can reach it (53 states), passes the axe-core
-automated rules with no violation, and a set of scripted browser tests covers the things automated rules cannot
+**Status in one paragraph.** Civic Permits is built and tested against WCAG 2.1 level AA. The 53 page states listed in
+section 1 (the pages of the site, in the states a test could reach, as each kind of person who can reach them) pass the
+axe-core automated rules with no violation; a state not on that list has not been scanned. A set of scripted browser
+tests covers the things automated rules cannot
 judge, such as keyboard order, visible focus, reflow, text spacing and the behaviour of error handling. **No manual
 test with a screen reader or other assistive technology has been recorded yet**, no third-party audit has been done,
 and no real user with a disability has tested the site. This report therefore makes **no claim of WCAG conformance,
@@ -135,7 +136,8 @@ claim.
 ## 5. Known gaps and what remains
 
 1. **No manual assistive-technology testing is recorded.** Every "Designed" row above depends on it. The procedure is
-   written; the results log is empty.
+   written, including a [twenty-minute Narrator check](MANUAL_CHECK_NARRATOR.md) that one person can do and date; the
+   results log is empty.
 2. **Session timeout (2.2.1).** A session ends after 8 hours without activity and the person is not warned. The
    remedy is a warning with a way to extend, or a longer limit.
 3. **The date-and-time control** for booking an inspection is the browser's own control, whose accessibility varies

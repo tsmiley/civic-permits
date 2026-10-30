@@ -6,8 +6,14 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Added
+- S5: the documentation slice. A rewritten README with screenshots (generated from the running site, with text
+  alternatives) and the work-in-progress banner removed; `docs/ARCHITECTURE.md` with the dependency rule, request
+  flow, data model and workflow diagrams; eleven architecture decision records; an API guide; a deployment guide with
+  an explicit list of what is not production-ready; a threat model; and the security ledger closed on its first row.
+  The workflow diagram is drawn from the code by a test, the data diagram is checked against the real model, and every
+  relative link in the documentation is checked to go somewhere that exists.
 - S4: the accessibility testing slice. An axe-core sweep (unmodified, through Deque.AxeCore.Playwright, with a canary
-  that proves it can find defects) over 53 states of every page as every kind of person; browser checks for visible
+  that proves it can find defects) over the 53 page states listed in the report, as each kind of person; browser checks for visible
   focus on every keyboard stop, boundaries under forced colours and text-spacing overrides; the manual testing
   procedure (`docs/ACCESSIBILITY_TESTING.md`) and the accessibility report with a criterion-by-criterion table
   (`docs/ACCESSIBILITY_REPORT.md`) that separates what is verified from what is only designed and what is owed.

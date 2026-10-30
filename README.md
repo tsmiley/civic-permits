@@ -1,15 +1,16 @@
 # Civic Permits
 
-> **Work in progress: portfolio demonstration.** This repository is being built slice by slice and is not yet
-> complete. This banner stays until the documentation slice lands.
+[![CI](https://github.com/tsmiley/civic-permits/actions/workflows/ci.yml/badge.svg)](https://github.com/tsmiley/civic-permits/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/tsmiley/civic-permits/actions/workflows/codeql.yml/badge.svg)](https://github.com/tsmiley/civic-permits/actions/workflows/codeql.yml)
 
-An online service for a city permit office, built to show what a senior engineer's architecture, security and
-accessibility work looks like in a realistic .NET application.
+An online service for a city permit office, built to show what careful architecture, security and accessibility work
+looks like in a realistic .NET 10 application.
 
-Residents and businesses apply for permits (building, sign, event, vendor) through accessible multi-step forms.
-Clerks review applications, request corrections, and approve or deny with reasons. Inspectors schedule and
-record inspections. Administrators configure permit types, fees and workflow rules. Anyone can look up a
-permit's status by its number.
+Residents and businesses apply for permits (building, sign, event, vendor) in three short steps. Clerks review
+applications, ask for changes, and approve or deny, always with a reason the applicant can read. Inspectors record what
+they find. Administrators define the permit types and their fees. Anyone can look up a permit's status by its number.
+
+![The home page: a heading, a one-sentence summary and three panels for finding a permit, checking a permit and applying.](docs/images/home.png)
 
 ## About this repository
 
@@ -17,11 +18,29 @@ permit's status by its number.
 repository. It is not source code from any employer, client or other company, and it was not adapted from any
 private project.** The town, people, addresses and permits in the sample data are entirely fictional.
 
-## Accessibility is the feature
+## What it is meant to show
 
-The interface is built and tested against WCAG 2.1 AA and the Section 508 requirements that reference it.
-That means "tested against", not "certified": no formal audit has been done, no manual screen-reader run has been
-recorded yet, and the [accessibility report](docs/ACCESSIBILITY_REPORT.md) lists what was tested, how, what was found and what remains.
+- **A domain that can be read.** The permit office's rules live in a project that depends on nothing, and the whole
+  process is one table that tests check against an independent statement of the rules
+  ([architecture](docs/ARCHITECTURE.md), [decisions](docs/adr/README.md)).
+- **Accessibility as the feature, with honest claims.** Built and tested against WCAG 2.1 AA; the 53 page states
+  listed in the report pass the axe-core rules; scripted browser tests cover keyboard, focus, reflow and spacing. It says plainly
+  what has *not* been done: no manual screen-reader run is recorded and nothing is certified
+  ([report](docs/ACCESSIBILITY_REPORT.md), [procedure](docs/ACCESSIBILITY_TESTING.md)).
+- **Security that is designed, tested and written down.** Access decided in one place, errors that reveal nothing,
+  sign-in that answers the same for an unknown address and a wrong password, concurrency guarded in the database
+  ([threat model](docs/THREAT_MODEL.md), [ledger](docs/SECURITY_LEDGER.md)).
+- **Two databases.** SQLite by default (nothing to install), SQL Server by configuration, one migration history each, and
+  a test that fails when the model and a provider's migrations disagree. The SQLite tests run everywhere; the SQL Server
+  tests need LocalDB, so they run on Windows and are skipped in the Ubuntu CI run.
+- **Discipline you can check.** Warnings are build errors, a vulnerable package fails the restore, every package is
+  MIT, Apache-2.0 or BSD apart from reviewed and listed exceptions, and the documentation's diagrams are drawn from the
+  code by tests so they cannot drift.
+
+| | |
+|---|---|
+| ![A sign-in form that has been refused: a framed summary reading "There is a problem" with one link to the email field, and the field itself marked with an error message.](docs/images/sign-in-error.png) | ![A clerk's view of an application in review: the status, three separate forms to approve, ask for changes or deny each with their own reason box and button, then the application's details and history.](docs/images/application-in-review.png) |
+| A refused form: focus goes to the summary, whose links go to each field | A clerk's page: one small form per step, reasons the applicant will read |
 
 ## Quick start
 
@@ -33,21 +52,24 @@ git clone https://github.com/tsmiley/civic-permits.git
 cd civic-permits
 dotnet build
 dotnet test
-dotnet run --project src/CivicPermits.Web
 ```
 
-Then open <http://localhost:5211>. In Development the site creates its database, loads the fictional town's sample data
-and, when you give it a password, the sample sign-ins (applicant, clerk, inspector, administrator). The password is
-yours to choose; it is read from the environment and never written down:
+To run the site with the fictional town's data and sample sign-ins, give it a password. It is yours to choose, it is
+read from the environment, and it is never written down:
 
 ```bash
 export Database__SampleUserPassword="a password of at least twelve characters"
 dotnet run --project src/CivicPermits.Web
 ```
 
-Then sign in as `clerk@bramblewick.test` (or any address in the API section below) with that password. The REST API runs separately with
-`dotnet run --project src/CivicPermits.Api` at <http://localhost:5210> (OpenAPI document at `/openapi/v1.json`
-in Development).
+Open <http://localhost:5211> and sign in as `clerk@bramblewick.test` with that password. The other sample sign-ins are
+`applicant.one@bramblewick.test`, `applicant.two@bramblewick.test`, `applicant.three@bramblewick.test`,
+`inspector.one@bramblewick.test`, `inspector.two@bramblewick.test` and `administrator@bramblewick.test`. The addresses
+use the reserved `.test` domain, so they can never reach a real mailbox. Without a password the data loads but nobody
+can sign in.
+
+The REST API runs separately: `dotnet run --project src/CivicPermits.Api` at <http://localhost:5210>, with its OpenAPI
+document at `/openapi/v1.json` in Development ([API guide](docs/API.md)).
 
 To use SQL Server instead of SQLite (the free LocalDB edition works):
 
@@ -56,46 +78,25 @@ export Database__Provider=SqlServer
 export Database__ConnectionString="Server=(localdb)\\MSSQLLocalDB;Database=CivicPermits;Trusted_Connection=True;TrustServerCertificate=True"
 ```
 
-## Architecture
+The browser tests drive the Chrome or Edge already installed on your machine (nothing is downloaded); with none they
+skip, saying so.
 
-Clean architecture in one solution. Dependencies point inward: the domain depends on nothing.
+## Documentation
 
-| Project | Responsibility |
+| Read | For |
 |---|---|
-| `CivicPermits.Domain` | Entities, value objects and rules. No dependencies. |
-| `CivicPermits.Application` | Use cases as request handlers behind a small dispatcher; contracts with the outer layers. |
-| `CivicPermits.Infrastructure` | EF Core (SQLite and SQL Server), ASP.NET Core Identity, logging, sample-data seeding, and the hosting pieces both web hosts share. |
-| `CivicPermits.Migrations.Sqlite`, `.SqlServer` | One migration history per database provider, kept out of Infrastructure so the two never mix. |
-| `CivicPermits.Api` | The REST API: problem-details errors, health checks, OpenAPI. |
-| `CivicPermits.Web` | The Blazor web site: server-rendered pages, accessibility built in. |
-| `CivicPermits.Shared` | Plain contracts shared by the API and its clients. |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The projects and the one rule, how a request travels, the data, the workflow diagram, how it is tested |
+| [docs/adr/](docs/adr/README.md) | Eleven short records of the decisions that shaped it, with what was rejected |
+| [docs/API.md](docs/API.md) | Signing in, the error format, who can do what, with `curl` examples |
+| [docs/ACCESSIBILITY_REPORT.md](docs/ACCESSIBILITY_REPORT.md) | What was tested, what was found, all 50 WCAG 2.1 A and AA criteria with an honest status for each, and the gaps |
+| [docs/ACCESSIBILITY_TESTING.md](docs/ACCESSIBILITY_TESTING.md) | The automated tests and the manual procedure |
+| [docs/MANUAL_CHECK_NARRATOR.md](docs/MANUAL_CHECK_NARRATOR.md) | A twenty-minute screen-reader check anyone can do on Windows, with a table to fill in |
+| [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) | What is protected, from whom, and what is done and not done |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Configuration, migrations, running behind a proxy, and what is not production-ready |
+| [docs/SECURITY_LEDGER.md](docs/SECURITY_LEDGER.md) | Findings and incidents, with their fixes |
+| [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md) | How the work is done, how to report a problem, what changed |
 
-Tests: `Domain.Tests` and `Application.Tests` (unit), `Infrastructure.Tests` (migrations, seeding and
-constraints against real SQLite and, where installed, SQL Server LocalDB), `Api.IntegrationTests` (the real API in
-memory), `Web.A11yTests` (a real browser driving the running site).
-
-## The domain
-
-A permit application moves through a fixed workflow, held as one table in `ApplicationWorkflow` and checked in
-the tests against a separate statement of the rules:
-
-```
-Draft ──submit──► Submitted ──start review──► InReview ──approve──► Approved ──issue──► Issued
-  │                  ▲                           │  └─deny──► Denied
-  │                  └────── submit again ───────┘
-  │                                   request corrections ──► CorrectionsRequested
-  └── withdraw (until the permit is issued or denied) ──► Withdrawn
-```
-
-The rules the code enforces, each with a test: only the applicant who owns an application can submit, edit or
-withdraw it; only staff review and decide; a reason is required to deny or to ask for corrections; the fee is
-worked out at submission from the permit type (a base amount plus a share of the declared value, in whole cents
-and basis points, never floating point); a permit is issued only once the fee is recorded as paid and, where the
-permit type needs one, the latest inspection has passed; every step is recorded with who took it and when.
-
-## The web site
-
-Server-rendered Blazor pages that work without JavaScript; the small scripts only improve focus handling.
+## The people who use it
 
 | Who | What they can do |
 |---|---|
@@ -105,87 +106,41 @@ Server-rendered Blazor pages that work without JavaScript; the small scripts onl
 | Inspectors | See the applications they are booked to inspect and record the result |
 | Administrators | Everything a clerk can do, plus define, change, open and close permit types |
 
-Accessibility is built in rather than added, and tested in a real browser on every change (WCAG 2.1 AA is the
-target; this is not a claim of certification):
+![A narrow phone screen showing an application: the status, a form to record the fee payment, one to cancel an inspection and one to issue the permit, then the details laid out one line at a time.](docs/images/application-on-a-phone.png)
 
-- one `h1` per page, landmarks, a skip link that really moves focus, a title that says where you are, and the
-  current page marked in the navigation;
-- every field has a visible label, hint and error tied to it with `aria-describedby`; required fields say so in
-  words; forms are not validated by the browser, so errors are written, specific and listed together;
-- a form that comes back with problems puts focus on an error summary whose links go to each field;
-- a multi-step journey shows where you are in words (`aria-current="step"`), and every status is written out, never
-  shown by colour alone;
-- all text and interface parts meet the contrast ratios noted in `app.css` (computed, not estimated), focus is always
-  visible, targets are at least 44px, tables scroll inside their own focusable region, and nothing scrolls sideways
-  at 320px or at 200% text size;
-- the content security policy forbids inline script and style, so the pages need neither.
+The pages work without JavaScript and reflow to a 320 px screen; the small scripts only improve where focus goes.
 
-What was tested, how, what was found and what remains is in [docs/ACCESSIBILITY_REPORT.md](docs/ACCESSIBILITY_REPORT.md), criterion by
-criterion, and the procedure for the manual testing with assistive technology (not yet done, and said so) is in
-[docs/ACCESSIBILITY_TESTING.md](docs/ACCESSIBILITY_TESTING.md). Every page in every state passes the axe-core rules; that is
-necessary, not sufficient.
+## The projects
 
-## The API
+| Project | Responsibility |
+|---|---|
+| `CivicPermits.Domain` | Entities, value objects, rules and the workflow table. Depends on nothing. |
+| `CivicPermits.Application` | Use cases as request handlers behind a small dispatcher; the contracts the outside must satisfy. |
+| `CivicPermits.Shared` | Plain contracts shared by the API and its clients. |
+| `CivicPermits.Infrastructure` | EF Core (SQLite and SQL Server), ASP.NET Core Identity, sample-data seeding, and the hosting both web hosts share. |
+| `CivicPermits.Migrations.Sqlite`, `.SqlServer` | One migration history per database provider. |
+| `CivicPermits.Api` | The REST API: problem-details errors, health checks, OpenAPI. |
+| `CivicPermits.Web` | The Blazor web site: server-rendered pages, accessibility built in. |
 
-REST under `/api/v1`, documented by the OpenAPI document at `/openapi/v1.json` (Development). Errors are RFC 9457
-problem documents with a stable `code` and a correlation id; an unexpected failure is a bare 500 that names nothing.
-
-| Area | Endpoints | Who |
-|---|---|---|
-| Sign-in | `POST /auth/register`, `/auth/login`, `/auth/refresh`; `GET /auth/me` | anyone (rate limited); `me` needs a token |
-| Permit types | `GET /permit-types[/{id}]` | anyone |
-| | `POST`, `PUT /permit-types[/{id}]`, `POST /permit-types/{id}/open`, `/close` | administrators |
-| Applications | `POST /applications`, `PUT /applications/{id}`, `POST .../submit`, `.../withdraw` | the applicant who owns it |
-| | `POST .../start-review`, `.../request-corrections`, `.../approve`, `.../deny`, `.../issue`, `.../payment`, `.../inspections` | clerks and administrators |
-| | `POST .../inspections/{id}/result` | the assigned inspector, or an administrator |
-| | `GET /applications`, `GET /applications/{id}` | whoever may see them (see below) |
-| Public lookup | `GET /public/permits/{number}` | anyone (rate limited): type, status and dates only |
-
-Who may see an application: an applicant sees their own, staff see all, an inspector sees those with an inspection
-booked for them. To anyone else it does not exist, and the answer is 404, never 403.
-
-How the API stays safe: opaque data-protected bearer tokens (15 minutes, refresh for 8 hours, nothing to sign with so
-no key in configuration); passwords of twelve or more characters, five wrong attempts lock the account for fifteen
-minutes, and a wrong password, an unknown address and a locked account get the same answer; registering an address
-that exists looks exactly like registering a new one; roles are checked by policy at the endpoint and again in the
-handler; every change carries an optimistic-concurrency version so two people cannot both win; permit numbers come
-from a per-year counter saved with the submission, so a failed request never uses one up. In this demonstration
-there is no email confirmation, and bearer tokens are protected with the host's data-protection keys, which a
-multi-instance deployment must share.
-
-Sample sign-ins exist only when `Database:SampleUserPassword` is supplied (an environment variable or user secrets,
-never a file in the repository). Their addresses use the reserved `.test` domain:
-`applicant.one@bramblewick.test`, `clerk@bramblewick.test`, `administrator@bramblewick.test`,
-`inspector.one@bramblewick.test` and so on.
-
-## Database
-
-SQLite is the default and needs nothing installed. Setting `Database:MigrateOnStartup` applies the migrations
-when the API starts, and `Database:SeedSampleData` (Development only, refused in Production) loads the fictional
-Town of Bramblewick: nine permit types and twelve applications at every stage of the process. Seeding is
-idempotent. Sample data holds no names, no email addresses and no passwords.
-
-To add a migration after changing the model (one per provider):
+Tests: `Domain.Tests` and `Application.Tests` (unit), `Infrastructure.Tests` (migrations, seeding and constraints
+against real SQLite and, where installed, SQL Server LocalDB), `Api.IntegrationTests` (the real API in memory),
+`Web.A11yTests` (a real browser driving the running site, including the axe-core sweep). Run each project in turn:
 
 ```bash
-dotnet tool restore
-dotnet ef migrations add <Name> --project src/CivicPermits.Migrations.Sqlite --startup-project src/CivicPermits.Migrations.Sqlite --output-dir Migrations
-dotnet ef migrations add <Name> --project src/CivicPermits.Migrations.SqlServer --startup-project src/CivicPermits.Migrations.SqlServer --output-dir Migrations
+for project in Domain.Tests Application.Tests Infrastructure.Tests Api.IntegrationTests Web.A11yTests; do
+  dotnet test "tests/CivicPermits.$project"
+done
 ```
 
-A test fails if the model and either provider's migrations disagree.
+## Known limits
 
-## Status
-
-| Slice | What | State |
-|---|---|---|
-| S0 | Solution scaffold, hosting, health, problem details, CI | in review |
-| S1 | Domain model, workflow, database, sample data | in review |
-| S2 | Identity, roles, API endpoints | in review |
-| S3 | Web interface | in review |
-| S4 | Automated and manual accessibility testing, report | in review |
-| S5 | Documentation, screenshots, diagrams | planned |
+This is a portfolio demonstration, not a deployed service. The honest list is in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#what-is-not-production-ready) and
+[docs/ACCESSIBILITY_REPORT.md](docs/ACCESSIBILITY_REPORT.md#5-known-gaps-and-what-remains); the main points are: no email
+(so no confirmation, reset or notifications), no payment, no multi-factor sign-in, a session that ends silently after eight
+hours, times in UTC, and no manual assistive-technology testing recorded yet.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Third-party packages are listed in [NOTICE](NOTICE).
+MIT, see [LICENSE](LICENSE). Third-party packages are listed in [NOTICE](NOTICE), including axe-core, which is MPL-2.0
+and is used unmodified for tests only.
