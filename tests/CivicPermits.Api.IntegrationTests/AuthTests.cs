@@ -155,7 +155,7 @@ public class AuthTests
     [Theory]
     [InlineData("not-an-email", "Aa1-longenoughpassword", "Valid Name", "email")]
     [InlineData("ok@bramblewick.test", "short1A", "Valid Name", "password")]
-    [InlineData("ok@bramblewick.test", "alllowercaseandlong1", "Valid Name", "password")]
+    [InlineData("ok@bramblewick.test", "fourteen-char1", "Valid Name", "password")]
     [InlineData("ok@bramblewick.test", "Aa1-longenoughpassword", "X", "displayName")]
     public async Task A_registration_with_a_bad_value_is_refused_and_says_which(string email, string password, string name, string field)
     {

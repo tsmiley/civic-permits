@@ -13,7 +13,7 @@ You do not need to be a programmer. You need to listen, and to write down what y
 
 1. Open a terminal in the folder where the repository is (for example, in File Explorer open the `civic-permits`
    folder, click the address bar, type `powershell` and press Enter).
-2. Choose a password of at least twelve characters for the practice accounts. It is only for this run and is never
+2. Choose a password of at least fifteen characters for the practice accounts. It is only for this run and is never
    saved. Then start the site (two lines, one after the other):
 
    ```powershell

@@ -32,7 +32,7 @@ at each release.
 | Skipping a step (issuing before the fee is paid or an inspection has passed) | Preconditions inside `Issue`; each refusal has a code | `A_permit_that_needs_an_inspection_cannot_be_issued_until...` and the others |
 | Two staff acting at once; losing an update to an application | A version on every application, raised on any change to it or its history or inspections; a stale write is a 409. Permit-type edits are **not** guarded: the last administrator to save wins | `Two_people_changing_the_same_application_cannot_both_succeed` |
 | Duplicate or wasted permit numbers | A per-year counter saved with the submission, guarded by a concurrency token, with a unique index behind it | `Two_requests_cannot_be_given_the_same_number` |
-| Guessing passwords | Twelve-character minimum; five failures lock for fifteen minutes; per-address rate limit (ten sign-in attempts a minute by default, with no settings at all); one answer for every failure | `Five_wrong_passwords_lock_the_account...`, `With_no_settings_at_all_the_eleventh_sign_in_attempt_in_a_minute_is_refused`, `The_rate_limit_defaults_are_pinned` |
+| Guessing passwords | Fifteen-character minimum with no composition rules and a bundled blocklist of the passwords people guess first (NIST SP 800-63B-4; it is a floor, not a breached-password corpus); hashes use 250,000 PBKDF2-HMAC-SHA512 iterations; five failures lock for fifteen minutes; per-address rate limit (ten sign-in attempts a minute by default, with no settings at all); one answer for every failure | `Five_wrong_passwords_lock_the_account...`, `With_no_settings_at_all_the_eleventh_sign_in_attempt_in_a_minute_is_refused`, `The_rate_limit_defaults_are_pinned`, `PasswordPolicyTests`, `PasswordAndSignOutTests` |
 | Finding out who has an account | Registration answers a taken address like a new one; sign-in gives one answer, and an address nobody registered costs the same password check as one that exists, so the time does not tell them apart (equalised work, not a measured guarantee); the public lookup treats malformed and unknown numbers alike | `Registering_an_address_that_exists_looks_exactly_like...`, `An_address_nobody_registered_costs_as_many_password_checks_as_one_that_exists`, `A_wrong_password_and_an_unknown_address_get_the_same_page` |
 | An endpoint added later that nobody remembered to protect | The API requires a signed-in person by default; the ten public operations are marked one by one and a test pins that exact list | `Exactly_the_ten_public_operations_are_open_to_anyone_and_everything_else_needs_a_sign_in_by_default` |
 | Another person using the same browser after sign-out, or a shared cache | Everything the API sends, and every page a signed-in person receives or the account pages, carries `Cache-Control: no-store`; signing out sends `Clear-Site-Data` for cache, cookies and storage | `Responses_that_carry_a_persons_data_are_never_kept`, `Pages_a_signed_in_person_receives_and_the_account_pages_are_never_kept_...`, `Signing_out_tells_the_browser_to_forget_the_site_...` |
@@ -56,6 +56,11 @@ at each release.
   hashed. Someone who can time responses can tell a locked account from an unlocked one, and so that it exists. Closing
   that would mean doing the hash work for a locked account too; it is not done, and it is listed here so it is a known
   limit and not a surprise.
+- **A stolen device keeps working until its token expires.** `POST /auth/sign-out` ends every refresh token of an account
+  at once, but an access token already issued is valid for its 15 minutes. The site's cookie re-checks the security stamp
+  every 30 minutes (Identity's default), so a changed stamp ends a site session within that time.
+- **Passwords are only as strong as the list and the length.** The blocklist is bundled and small, not a breach corpus; a
+  production service would add a breached-password check, which needs the network.
 - **No multi-factor sign-in, no password reset, no email confirmation.** All need an email service; listed in
   [DEPLOYMENT.md](DEPLOYMENT.md).
 - **No audit trail beyond each application's own history.** A refused request (not signed in, forbidden, hidden,

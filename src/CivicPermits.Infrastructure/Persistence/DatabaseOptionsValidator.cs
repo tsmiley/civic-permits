@@ -1,3 +1,4 @@
+using CivicPermits.Infrastructure.Identity;
 using Microsoft.Extensions.Options;
 
 namespace CivicPermits.Infrastructure.Persistence;
@@ -24,9 +25,9 @@ internal sealed class DatabaseOptionsValidator : IValidateOptions<DatabaseOption
             failures.Add($"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.SeedSampleData)} needs {DatabaseOptions.SectionName}:{nameof(DatabaseOptions.MigrateOnStartup)}, because the tables must exist first.");
         }
 
-        if (options.SampleUserPassword is { Length: < 12 })
+        if (options.SampleUserPassword is { Length: < PasswordPolicy.MinimumLength })
         {
-            failures.Add($"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.SampleUserPassword)} must be at least 12 characters when it is set.");
+            failures.Add($"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.SampleUserPassword)} must be at least {PasswordPolicy.MinimumLength} characters when it is set.");
         }
 
         if (options.SampleUserPassword is not null && !options.SeedSampleData)

@@ -6,6 +6,10 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Security
+- Fixes from the whole-repository security review, part 2 (ledger rows 5, 6 and 15): passwords follow NIST SP 800-63B-4
+  (15 characters or more, no composition rules, a bundled blocklist of the passwords people guess first, 256 at most);
+  hashes use 250,000 PBKDF2 iterations (existing ones are upgraded at the next sign-in); `POST /auth/sign-out` ends every
+  refresh token of the signed-in account.
 - Fixes from the whole-repository security review (ledger rows 3 to 15). The Lows: HSTS is two years with subdomains;
   sample data and sample sign-ins are refused anywhere but Development; an inspector stops seeing an application once
   their booking is cancelled before any visit; hosts refuse to start outside Development on an ASP.NET Core older than
