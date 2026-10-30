@@ -9,6 +9,7 @@ namespace CivicPermits.Web.A11yTests;
 /// </summary>
 internal sealed partial class SitePage : IAsyncDisposable
 {
+    public const string ApplicantOne = "applicant.one@bramblewick.test";
     public const string ApplicantTwo = "applicant.two@bramblewick.test";
     public const string ApplicantThree = "applicant.three@bramblewick.test";
     public const string Clerk = "clerk@bramblewick.test";
@@ -30,22 +31,33 @@ internal sealed partial class SitePage : IAsyncDisposable
     /// <summary>Console errors, page errors and failed requests seen so far. Must be empty at the end of a test.</summary>
     public List<string> Problems { get; } = [];
 
-    public static async Task<SitePage> OpenAsync(SiteFixture site, int width = 1280, int height = 900)
+    public static async Task<SitePage> OpenAsync(SiteFixture site, int width = 1280, int height = 900, bool forcedColors = false)
     {
         site.SkipWithoutBrowser();
         IBrowserContext context = await site.Browser!.NewContextAsync(new BrowserNewContextOptions
         {
             ViewportSize = new ViewportSize { Width = width, Height = height },
             BaseURL = site.BaseAddress.ToString(),
+            ForcedColors = forcedColors ? ForcedColors.Active : ForcedColors.None,
         });
         IPage page = await context.NewPageAsync();
         SitePage session = new(site, context, page);
 
+        // The browser logs "Failed to load resource" for any 4xx page, including the 403 and 404 pages a test visits on
+        // purpose. Those are checked by status in the tests that visit them, so the message is skipped here and
+        // the failure of anything that is not a page (a script, a style, an image) is caught from the response instead.
         page.Console += (_, message) =>
         {
-            if (message.Type == "error")
+            if (message.Type == "error" && !message.Text.StartsWith("Failed to load resource", StringComparison.Ordinal))
             {
                 session.Problems.Add($"console: {message.Text}");
+            }
+        };
+        page.Response += (_, response) =>
+        {
+            if (response.Status >= 400 && response.Request.ResourceType != "document")
+            {
+                session.Problems.Add($"{response.Status} for {response.Url}");
             }
         };
         page.PageError += (_, error) => session.Problems.Add($"page error: {error}");
@@ -72,6 +84,15 @@ internal sealed partial class SitePage : IAsyncDisposable
         await Page.GetByRole(AriaRole.Link, new PageGetByRoleOptions { Name = "Sign out" }).ClickAsync();
         await Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Sign out" }).ClickAsync();
         await Page.WaitForURLAsync(url => url.TrimEnd('/') == _site.BaseAddress.ToString().TrimEnd('/'));
+    }
+
+    /// <summary>Opens the application in the person's list whose project description starts with the text.</summary>
+    public async Task OpenApplicationAsync(string projectStart)
+    {
+        await GoAsync("/applications");
+        await Page.Locator("tbody tr", new PageLocatorOptions { HasText = projectStart }).GetByRole(AriaRole.Link).First.ClickAsync();
+        await Page.WaitForURLAsync(url => url.Contains("/applications/", StringComparison.Ordinal) && !url.EndsWith("/applications/", StringComparison.Ordinal));
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
     }
 
     /// <summary>The permit number of the first issued sample permit, read from a clerk's list.</summary>

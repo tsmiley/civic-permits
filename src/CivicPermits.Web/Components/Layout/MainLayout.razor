@@ -1,9 +1,9 @@
 @inherits LayoutComponentBase
 
-@* The document has a <base href="/">, so the skip link carries the page's own address: a bare "#main" would go to the home page. *@
-<a class="skip-link" href="@(new Uri(Navigation.Uri).GetLeftPart(UriPartial.Query))#main">Skip to main content</a>
-
 <header class="site-header">
+    @* The document has a <base href="/">, so the skip link carries the page's own address: a bare "#main" would go to
+       the home page. It sits first inside the banner so that every part of the page is inside a landmark. *@
+    <a class="skip-link" href="@(new Uri(Navigation.Uri).GetLeftPart(UriPartial.Query))#main">Skip to main content</a>
     <p class="site-name"><a href="/">Civic Permits</a></p>
     <nav aria-label="Main">
         <ul class="nav-list">

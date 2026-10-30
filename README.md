@@ -20,8 +20,8 @@ private project.** The town, people, addresses and permits in the sample data ar
 ## Accessibility is the feature
 
 The interface is built and tested against WCAG 2.1 AA and the Section 508 requirements that reference it.
-That means "tested against", not "certified": no formal audit has been done, and the accessibility report
-(added with the accessibility slice) will list what was tested, how, what was found and what remains.
+That means "tested against", not "certified": no formal audit has been done, no manual screen-reader run has been
+recorded yet, and the [accessibility report](docs/ACCESSIBILITY_REPORT.md) lists what was tested, how, what was found and what remains.
 
 ## Quick start
 
@@ -120,7 +120,10 @@ target; this is not a claim of certification):
   at 320px or at 200% text size;
 - the content security policy forbids inline script and style, so the pages need neither.
 
-The accessibility report (what was tested, how, what was found, what remains) arrives with the accessibility slice.
+What was tested, how, what was found and what remains is in [docs/ACCESSIBILITY_REPORT.md](docs/ACCESSIBILITY_REPORT.md), criterion by
+criterion, and the procedure for the manual testing with assistive technology (not yet done, and said so) is in
+[docs/ACCESSIBILITY_TESTING.md](docs/ACCESSIBILITY_TESTING.md). Every page in every state passes the axe-core rules; that is
+necessary, not sufficient.
 
 ## The API
 
@@ -180,7 +183,7 @@ A test fails if the model and either provider's migrations disagree.
 | S1 | Domain model, workflow, database, sample data | in review |
 | S2 | Identity, roles, API endpoints | in review |
 | S3 | Web interface | in review |
-| S4 | Automated and manual accessibility testing, report | planned |
+| S4 | Automated and manual accessibility testing, report | in review |
 | S5 | Documentation, screenshots, diagrams | planned |
 
 ## Licence

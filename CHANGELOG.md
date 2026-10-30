@@ -6,6 +6,12 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Added
+- S4: the accessibility testing slice. An axe-core sweep (unmodified, through Deque.AxeCore.Playwright, with a canary
+  that proves it can find defects) over 53 states of every page as every kind of person; browser checks for visible
+  focus on every keyboard stop, boundaries under forced colours and text-spacing overrides; the manual testing
+  procedure (`docs/ACCESSIBILITY_TESTING.md`) and the accessibility report with a criterion-by-criterion table
+  (`docs/ACCESSIBILITY_REPORT.md`) that separates what is verified from what is only designed and what is owed.
+  The skip link moved inside the banner landmark. axe-core is listed in NOTICE as MPL-2.0, a reviewed exception.
 - S3: the web site. Server-rendered Blazor pages for browsing and looking up permits, registering and signing in
   (cookie sessions, anti-forgery on every post), the three-step application journey, the clerk, inspector and
   administrator workspaces, and permit type management; shared form components with errors tied to fields; focus

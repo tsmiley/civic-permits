@@ -26,9 +26,14 @@ $allowed = @('MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD')
 # Both are Microsoft redistributable runtime components that arrive through Microsoft.Data.SqlClient, which the
 # SQL Server provider requires. The repository does not contain them: NuGet restores them from nuget.org, and
 # they are covered by Microsoft's own license terms (documented in NOTICE). Raised for a ruling on 2026-10-30.
+#
+# Deque.AxeCore.Commons carries the axe-core accessibility engine, which is MPL-2.0 (a file-level, weak copyleft
+# license). It is used unmodified, for tests only, and is never part of the built application. Allowed on
+# 2026-10-30 on those conditions: its files are never edited, and NOTICE names it as MPL-2.0 (never MIT).
 $reviewed = @{
     'Microsoft.Data.SqlClient.SNI.runtime'  = 'Microsoft Software License Terms (proprietary redistributable, native SQL networking library)'
     'Microsoft.Identity.Client.NativeInterop' = 'Microsoft Software License Terms (proprietary redistributable, native authentication interop)'
+    'Deque.AxeCore.Commons'                 = 'MPL-2.0 (axe-core accessibility engine, unmodified, tests only)'
 }
 
 $packagesFolder = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $HOME '.nuget/packages' }
@@ -67,7 +72,7 @@ $rows = foreach ($key in ($seen.Keys | Sort-Object)) {
         $parts = $expression -split '\s+(?:OR|AND)\s+' | ForEach-Object { $_.Trim('(', ')', ' ') }
         $ok = ($parts | Where-Object { $allowed -contains $_ }).Count -eq $parts.Count -or
               ($expression -match '\bOR\b' -and ($parts | Where-Object { $allowed -contains $_ }).Count -ge 1)
-        $verdict = if ($ok) { 'ok' } else { 'NOT ALLOWED' }
+        $verdict = if ($ok) { 'ok' } elseif ($reviewed.ContainsKey($id) -and $expression -eq 'MPL-2.0') { 'EXCEPTION (reviewed, see NOTICE)' } else { 'NOT ALLOWED' }
     }
     elseif ($reviewed.ContainsKey($id)) {
         $expression = $reviewed[$id]

@@ -37,6 +37,7 @@ Test-only dependencies
   Microsoft.Extensions.TimeProvider.Testing                        MIT
   Microsoft.NET.Test.Sdk                                           MIT
   Microsoft.Playwright                                             MIT
+  Deque.AxeCore.Playwright (wrapper)                               MIT
   xunit.v3 (xunit.v3.mtp-off) and xunit.runner.visualstudio        Apache-2.0
 
 Transitive packages of note
@@ -45,6 +46,13 @@ Transitive packages of note
   Microsoft.Data.SqlClient (used by Microsoft.EntityFrameworkCore.SqlServer)             MIT
 
 REVIEWED EXCEPTIONS (not MIT, Apache-2.0 or BSD)
+
+axe-core (inside Deque.AxeCore.Commons)   MPL-2.0 (Mozilla Public License 2.0)
+  The accessibility engine used by the browser tests. It is licensed MPL-2.0, a file-level license, and is
+  not MIT. It is used unmodified, through the Deque.AxeCore.Playwright package, for tests only: it is not part
+  of the built application and nothing in this repository changes its files. The package also carries an
+  MIT-licensed notice for code adapted from SeleniumAxeDotnet (copyright Javier Novoa and Troy Walsh), shipped
+  inside the package. The license text is in the package (LICENSE.txt) and at https://www.mozilla.org/MPL/2.0/.
 
 Two Microsoft redistributable runtime components arrive transitively through Microsoft.Data.SqlClient,
 which SQL Server support requires. Neither is stored in this repository; both are licensed by Microsoft
