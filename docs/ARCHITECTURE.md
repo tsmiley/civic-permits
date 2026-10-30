@@ -53,7 +53,7 @@ sequenceDiagram
     A->>A: the workflow allows it? the role may take it? the rules hold?
     A-->>H: status Approved, a history entry added
     H->>U: SaveChangesAsync
-    U->>U: raise the application version; write; a stale copy loses
+    U->>U: raise the application version, write, and a stale copy loses
     U-->>H: saved
     H-->>Page: the application as this person may see it
     Page-->>Clerk: redirect to the application, with a status message

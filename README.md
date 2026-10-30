@@ -28,10 +28,11 @@ private project.** The town, people, addresses and permits in the sample data ar
   what has *not* been done: no manual screen-reader run is recorded and nothing is certified
   ([report](docs/ACCESSIBILITY_REPORT.md), [procedure](docs/ACCESSIBILITY_TESTING.md)).
 - **Security that is designed, tested and written down.** Access decided in one place, errors that reveal nothing,
-  account enumeration closed, concurrency guarded in the database
+  sign-in that answers the same for an unknown address and a wrong password, concurrency guarded in the database
   ([threat model](docs/THREAT_MODEL.md), [ledger](docs/SECURITY_LEDGER.md)).
-- **Two databases, both tested.** SQLite by default (nothing to install), SQL Server by configuration, one migration
-  history each, and a test that fails when the model and a provider's migrations disagree.
+- **Two databases.** SQLite by default (nothing to install), SQL Server by configuration, one migration history each, and
+  a test that fails when the model and a provider's migrations disagree. The SQLite tests run everywhere; the SQL Server
+  tests need LocalDB, so they run on Windows and are skipped in the Ubuntu CI run.
 - **Discipline you can check.** Warnings are build errors, a vulnerable package fails the restore, every package is
   MIT, Apache-2.0 or BSD apart from reviewed and listed exceptions, and the documentation's diagrams are drawn from the
   code by tests so they cannot drift.

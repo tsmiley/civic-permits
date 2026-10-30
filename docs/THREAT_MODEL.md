@@ -28,7 +28,7 @@ at each release.
 | Threat | What is done | Evidence |
 |---|---|---|
 | Reading another person's application | Access is decided in one place (`Access.cs`): an applicant sees their own, staff see all, an inspector sees those with an inspection booked for them; anyone else gets **404, never 403**, so an identifier cannot be confirmed | API and browser tests of cross-applicant access; `Another_applicants_application_is_a_real_404...` |
-| An applicant approving, reviewing or paying for their own application | The workflow table names the roles; the role is checked in the aggregate and again by policy at the endpoint | The 576-combination test; `An_applicant_cannot_review_decide_or_record_payment...` |
+| An applicant approving, reviewing or paying for their own application | The workflow table names the roles; the role is checked in the aggregate, the one place that decides; the endpoints require a signed-in person but do not repeat the role check | The 576-combination test; `An_applicant_cannot_review_decide_or_record_payment...` |
 | Skipping a step (issuing before the fee is paid or an inspection has passed) | Preconditions inside `Issue`; each refusal has a code | `A_permit_that_needs_an_inspection_cannot_be_issued_until...` and the others |
 | Two staff acting at once; losing an update | A version on every application, raised on any change; a stale write is a 409 | `Two_people_changing_the_same_application_cannot_both_succeed` |
 | Duplicate or wasted permit numbers | A per-year counter saved with the submission, guarded by a concurrency token, with a unique index behind it | `Two_requests_cannot_be_given_the_same_number` |
@@ -51,8 +51,8 @@ at each release.
   attacker could measure them. Equalising them needs an email flow.
 - **No multi-factor sign-in, no password reset, no email confirmation.** All need an email service; listed in
   [DEPLOYMENT.md](DEPLOYMENT.md).
-- **No audit trail beyond each application's own history.** Who signed in, and failed attempts, are in the log but not
-  in a queryable record.
+- **No audit trail beyond each application's own history.** The application does not record who signed in or who failed
+  to; the request log shows a request and its status code and nothing more, and there is no queryable record.
 - **Rate limiting trusts the connecting address.** Behind a proxy it must be given forwarded headers it can trust
   ([DEPLOYMENT.md](DEPLOYMENT.md)); until then every client behind the proxy shares one budget.
 - **No denial-of-service protection beyond the rate limits.** That belongs in front of the application.
