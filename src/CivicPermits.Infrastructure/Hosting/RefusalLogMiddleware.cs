@@ -32,14 +32,21 @@ public sealed partial class RefusalLogMiddleware(RequestDelegate next, ILogger<R
 
         int status = context.Response.StatusCode;
         string? code = context.Items[CodeKey] as string;
+        string? redirected = RefusalOfRedirect(context);
 
-        if (code is null && status is not (StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden or StatusCodes.Status429TooManyRequests)
-            && !IsRedirectToSignIn(context))
+        if (code is null && redirected is null && status is not (StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden or StatusCodes.Status429TooManyRequests))
         {
             return;
         }
 
-        code ??= status switch
+        // The page a refused signed-in person is sent to answers 403 itself; the line was already written for the request
+        // that was refused, with the route that was asked for, so this one would only repeat it with a less useful route.
+        if (code is null && redirected is null && context.Request.Path.StartsWithSegments(DeniedPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        code ??= redirected ?? status switch
         {
             StatusCodes.Status401Unauthorized => "unauthenticated",
             StatusCodes.Status403Forbidden => "forbidden",
@@ -55,11 +62,37 @@ public sealed partial class RefusalLogMiddleware(RequestDelegate next, ILogger<R
         Refused(logger, account, context.Request.Method, route, status, code);
     }
 
-    // The site answers someone who is not signed in with a redirect to the sign-in page rather than a 401.
-    private static bool IsRedirectToSignIn(HttpContext context) =>
-        context.Response.StatusCode is StatusCodes.Status302Found or StatusCodes.Status303SeeOther
-        && context.Response.Headers.Location.ToString().StartsWith("/account/login", StringComparison.OrdinalIgnoreCase)
-        && !context.Request.Path.StartsWithSegments("/account", StringComparison.OrdinalIgnoreCase);
+    private const string LoginPath = "/account/login";
+    private const string DeniedPath = "/account/denied";
+
+    // The site answers someone who is not signed in with a redirect to the sign-in page rather than a 401, and someone who
+    // is signed in without the role with a redirect to the access-denied page rather than a 403.
+    private static string? RefusalOfRedirect(HttpContext context)
+    {
+        if (context.Response.StatusCode is not (StatusCodes.Status302Found or StatusCodes.Status303SeeOther)
+            || context.Request.Path.StartsWithSegments("/account", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        string path = PathOf(context.Response.Headers.Location.ToString());
+
+        if (path.Equals(LoginPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return "unauthenticated";
+        }
+
+        return path.Equals(DeniedPath, StringComparison.OrdinalIgnoreCase) ? "forbidden" : null;
+    }
+
+    // The framework sends an absolute address (http://host/account/login?ReturnUrl=...); only its path says where it leads.
+    private static string PathOf(string location)
+    {
+        string path = Uri.TryCreate(location, UriKind.Absolute, out Uri? absolute) ? absolute.AbsolutePath : location;
+        int end = path.IndexOfAny(['?', '#']);
+
+        return end < 0 ? path : path[..end];
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Refused: account {Account} {Method} {Route} answered {Status} ({Code})")]
     private static partial void Refused(ILogger logger, string account, string method, string route, int status, string code);

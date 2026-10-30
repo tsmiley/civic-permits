@@ -52,6 +52,10 @@ at each release.
 
 - **Timing differences** between "address taken" and "address new" in registration are not hidden. A determined
   attacker could measure them. Equalising them needs an email flow.
+- **A locked account answers faster than a wrong password**, because the lockout is checked before the password is
+  hashed. Someone who can time responses can tell a locked account from an unlocked one, and so that it exists. Closing
+  that would mean doing the hash work for a locked account too; it is not done, and it is listed here so it is a known
+  limit and not a surprise.
 - **No multi-factor sign-in, no password reset, no email confirmation.** All need an email service; listed in
   [DEPLOYMENT.md](DEPLOYMENT.md).
 - **No audit trail beyond each application's own history.** A refused request (not signed in, forbidden, hidden,

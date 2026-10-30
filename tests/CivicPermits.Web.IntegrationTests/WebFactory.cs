@@ -12,6 +12,7 @@ public sealed class WebFactory : WebApplicationFactory<Program>
 {
     private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"civic-permits-web-{Guid.NewGuid():N}.db");
     private readonly Dictionary<string, string?> _settings = [];
+    private readonly List<Action<IServiceCollection>> _services = [];
     private string _environment = "Development";
 
     public WebFactory()
@@ -38,6 +39,14 @@ public sealed class WebFactory : WebApplicationFactory<Program>
     public WebFactory WithSetting(string key, string? value)
     {
         _settings[key] = value;
+
+        return this;
+    }
+
+    /// <summary>Adds or replaces a service in the host, such as a log sink to capture what the site writes.</summary>
+    public WebFactory WithServices(Action<IServiceCollection> configure)
+    {
+        _services.Add(configure);
 
         return this;
     }
@@ -73,6 +82,7 @@ public sealed class WebFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment(_environment);
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(_settings));
+        builder.ConfigureServices(services => _services.ForEach(configure => configure(services)));
     }
 
     protected override void Dispose(bool disposing)

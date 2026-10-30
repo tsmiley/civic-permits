@@ -227,6 +227,50 @@ public class ConcurrencyAndIdentityTests
     }
 
     [Fact]
+    public async Task Registering_when_giving_the_role_is_refused_fails_loudly_and_leaves_no_account_behind()
+    {
+        using SqliteTestDatabase database = await SqliteTestDatabase.MigratedAsync();
+        ServiceCollection services = [];
+        services.AddLogging();
+        services.AddInfrastructure(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Database:Provider"] = "Sqlite",
+            ["Database:ConnectionString"] = $"Data Source={database.FilePath}",
+        }).Build());
+        services.AddScoped<UserManager<ApplicationUser>, RoleRefusingUserManager>(); // registered last, so it replaces Identity's
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<IdentityBootstrapper>().EnsureRolesAsync();
+        RegistrationService registration = scope.ServiceProvider.GetRequiredService<RegistrationService>();
+        UserManager<ApplicationUser> users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        // The role exists, and the call returns a failed result (it does not throw), which is the other way it can go wrong.
+        InvalidOperationException failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => registration.RegisterApplicantAsync("someone@bramblewick.test", $"Aa1-{Guid.NewGuid():N}", "Someone"));
+
+        Assert.Contains("Applicant", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("RoleRefusedByTest", failure.Message, StringComparison.Ordinal);
+        Assert.Null(await users.FindByEmailAsync("someone@bramblewick.test"));
+    }
+
+    /// <summary>An Identity user manager that refuses to give anyone a role, by returning a failed result the way Identity can.</summary>
+    private sealed class RoleRefusingUserManager(
+        IUserStore<ApplicationUser> store,
+        Microsoft.Extensions.Options.IOptions<IdentityOptions> options,
+        IPasswordHasher<ApplicationUser> hasher,
+        IEnumerable<IUserValidator<ApplicationUser>> userValidators,
+        IEnumerable<IPasswordValidator<ApplicationUser>> passwordValidators,
+        ILookupNormalizer normalizer,
+        IdentityErrorDescriber errors,
+        IServiceProvider services,
+        Microsoft.Extensions.Logging.ILogger<UserManager<ApplicationUser>> logger)
+        : UserManager<ApplicationUser>(store, options, hasher, userValidators, passwordValidators, normalizer, errors, services, logger)
+    {
+        public override Task<IdentityResult> AddToRoleAsync(ApplicationUser user, string role) =>
+            Task.FromResult(IdentityResult.Failed(new IdentityError { Code = "RoleRefusedByTest", Description = "Refused for the test." }));
+    }
+
+    [Fact]
     public async Task A_sample_password_that_is_too_short_stops_the_host_from_starting()
     {
         ServiceCollection services = [];

@@ -79,7 +79,7 @@ design the application does not write passwords, tokens or connection strings to
 an automated test. A test does check that a deliberate failure never reaches the response, and the logging configuration
 keeps the framework at Warning.
 
-A refused request leaves one extra line at Warning: not signed in, forbidden, rate limited, a redirect to sign-in, or any
+A refused request leaves one extra line at Warning: not signed in, forbidden, rate limited, a redirect to sign-in or to the access-denied page, or any
 request that was answered with a stable error code. It names the account's id (never its address), the method, the route
 pattern, the status and the code, and tests check that no email address, password or token appears in any event. A
 successful sign-in is not logged by the application.
