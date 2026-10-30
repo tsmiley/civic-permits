@@ -25,6 +25,14 @@ public static class HostingExtensions
         // The server name and version help only someone choosing which known flaw to try.
         builder.Services.Configure<KestrelServerOptions>(kestrel => kestrel.AddServerHeader = false);
 
+        // The rulebook's value is two years and every subdomain (Strict-Transport-Security: max-age=63072000; includeSubDomains);
+        // the framework's default is thirty days for the one host. No preload: that is a public, hard-to-undo commitment.
+        builder.Services.AddHsts(hsts =>
+        {
+            hsts.MaxAge = TimeSpan.FromDays(730);
+            hsts.IncludeSubDomains = true;
+        });
+
         builder.Host.UseSerilog((context, services, logger) => logger
             .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
@@ -59,6 +67,8 @@ public static class HostingExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(headers);
+
+        RuntimeFloor.Require(app.Environment.IsDevelopment(), RuntimeFloor.Running());
 
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<SecurityHeadersMiddleware>(headers);

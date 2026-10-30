@@ -14,9 +14,9 @@ public static partial class DatabaseInitializer
 {
     /// <summary>
     /// Brings the database up to date, then seeds it. Does nothing unless <see cref="DatabaseOptions.MigrateOnStartup"/>
-    /// is set. Sample data is refused outright in Production, whatever the configuration says.
+    /// is set. Sample data, with its sample sign-ins, is refused anywhere but Development, whatever the configuration says.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Sample data was requested in the Production environment.</exception>
+    /// <exception cref="InvalidOperationException">Sample data was requested outside the Development environment.</exception>
     public static async Task InitializeDatabaseAsync(this WebApplication app, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -27,9 +27,10 @@ public static partial class DatabaseInitializer
         DatabaseOptions options = services.GetRequiredService<IOptions<DatabaseOptions>>().Value;
         ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DatabaseInitializer));
 
-        if (options.SeedSampleData && app.Environment.IsProduction())
+        if (options.SeedSampleData && !app.Environment.IsDevelopment())
         {
-            throw new InvalidOperationException("Sample data cannot be loaded in the Production environment.");
+            throw new InvalidOperationException(
+                $"Sample data can only be loaded in the Development environment, not in {app.Environment.EnvironmentName}.");
         }
 
         if (!options.MigrateOnStartup)

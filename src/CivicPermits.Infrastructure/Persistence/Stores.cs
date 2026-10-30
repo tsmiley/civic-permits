@@ -70,7 +70,9 @@ internal sealed class PermitApplicationStore(CivicPermitsDbContext database) : I
 
         if (search.InspectorId is { } inspectorId)
         {
-            query = query.Where(application => application.Inspections.Any(inspection => inspection.InspectorId == inspectorId));
+            // The same rule as Access.CanSee: a cancelled inspection does not make an application the inspector's to see.
+            query = query.Where(application => application.Inspections.Any(inspection =>
+                inspection.InspectorId == inspectorId && inspection.Status != InspectionStatus.Cancelled));
         }
 
         int total = await query.CountAsync(cancellationToken);

@@ -55,7 +55,7 @@ public class SiteSecurityTests
         Assert.Contains("secure", session, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("httponly", session, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("samesite=lax", session, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("max-age", string.Join(' ', response.Headers.GetValues("Strict-Transport-Security")), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("max-age=63072000; includeSubDomains", response.Headers.GetValues("Strict-Transport-Security").Single());
     }
 
     [Fact]
@@ -129,6 +129,32 @@ public class SiteSecurityTests
             {
                 break;
             }
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, last);
+    }
+
+    [Fact]
+    public async Task The_register_form_is_rate_limited_per_address_like_the_sign_in_form()
+    {
+        using WebFactory factory = new WebFactory().WithSetting("RateLimiting:AuthPerWindow", "4");
+        using HttpClient client = factory.Client();
+        string html = await Forms.GetHtmlAsync(client, "/account/register", Token);
+
+        HttpStatusCode last = HttpStatusCode.OK;
+
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            // An empty form is refused for its content (a 200 with the errors) until the limiter steps in.
+            HttpResponseMessage response = await Forms.PostAsync(client, "/account/register", html, "register", new() { ["name"] = string.Empty, ["email"] = string.Empty, ["password"] = string.Empty }, Token);
+            last = response.StatusCode;
+
+            if (last == HttpStatusCode.TooManyRequests)
+            {
+                break;
+            }
+
+            Assert.Equal(HttpStatusCode.OK, last);
         }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, last);

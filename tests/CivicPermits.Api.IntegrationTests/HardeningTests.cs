@@ -108,7 +108,7 @@ public class HardeningTests
         HttpResponseMessage response = await client.GetAsync("/health/live", Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("max-age=", response.Headers.GetValues("Strict-Transport-Security").Single(), StringComparison.Ordinal);
+        Assert.Equal("max-age=63072000; includeSubDomains", response.Headers.GetValues("Strict-Transport-Security").Single());
         AssertEveryHeader(response, "production health");
     }
 
@@ -305,6 +305,32 @@ public class HardeningTests
         Assert.NotNull(limited.Headers.RetryAfter);
     }
 
+    [Theory]
+    [InlineData("/api/v1/auth/register")]
+    [InlineData("/api/v1/auth/refresh")]
+    public async Task With_no_settings_at_all_registering_and_refreshing_are_limited_to_ten_a_minute_like_signing_in(string route)
+    {
+        using ApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        for (int attempt = 1; attempt <= 10; attempt++)
+        {
+            HttpResponseMessage allowed = await PostEmptyAsync(client, route);
+
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, allowed.StatusCode);
+        }
+
+        HttpResponseMessage limited = await PostEmptyAsync(client, route);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.NotNull(limited.Headers.RetryAfter);
+    }
+
+    private static Task<HttpResponseMessage> PostEmptyAsync(HttpClient client, string route) =>
+        route.EndsWith("register", StringComparison.Ordinal)
+            ? client.PostAsJsonAsync(route, new RegisterRequest(null, null, null), Token)
+            : client.PostAsJsonAsync(route, new RefreshRequest(null), Token);
+
     [Fact]
     public async Task An_address_nobody_registered_costs_as_many_password_checks_as_one_that_exists()
     {
@@ -368,6 +394,46 @@ public class HardeningTests
     }
 
     [Fact]
+    public async Task An_inspector_stops_seeing_an_application_once_their_booking_is_cancelled_before_any_visit()
+    {
+        using SeededApi api = new();
+        using HttpClient clerk = await api.SignInAsync(SeededApi.Clerk, Token);
+        using HttpClient inspector = await api.SignInAsync(SeededApi.InspectorOne, Token);
+        (Guid id, InspectionResponse booked) = await KitchenAsync(clerk);
+
+        // While the booking stands, the inspector can see the application and finds it in the list.
+        Assert.Equal(HttpStatusCode.OK, (await inspector.GetAsync($"/api/v1/applications/{id}", Token)).StatusCode);
+        Assert.Contains(id, (await inspector.GetFromJsonAsync<PagedResponse<ApplicationSummaryResponse>>("/api/v1/applications?pageSize=50", Token))!.Items.Select(item => item.Id));
+
+        await clerk.PostAsJsonAsync($"/api/v1/applications/{id}/inspections/{booked.Id}/cancel", new ReasonRequest("Called off."), Token);
+
+        // After it, the application is not theirs to know about: a 404, as for any stranger, and absent from the list.
+        HttpResponseMessage hidden = await inspector.GetAsync($"/api/v1/applications/{id}", Token);
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        Assert.DoesNotContain(id, (await inspector.GetFromJsonAsync<PagedResponse<ApplicationSummaryResponse>>("/api/v1/applications?pageSize=50", Token))!.Items.Select(item => item.Id));
+        Assert.Equal(HttpStatusCode.NotFound, (await inspector.PostAsJsonAsync($"/api/v1/applications/{id}/inspections/{booked.Id}/result", new InspectionResultRequest(true, null), Token)).StatusCode);
+    }
+
+    [Fact]
+    public async Task An_inspector_who_recorded_a_result_still_sees_the_application_and_a_cancelled_extra_booking_does_not_change_that()
+    {
+        using SeededApi api = new();
+        using HttpClient clerk = await api.SignInAsync(SeededApi.Clerk, Token);
+        using HttpClient inspector = await api.SignInAsync(SeededApi.InspectorOne, Token);
+        ApplicationSummaryResponse deck = (await clerk.GetFromJsonAsync<PagedResponse<ApplicationSummaryResponse>>("/api/v1/applications?status=Approved&pageSize=50", Token))!
+            .Items.Single(item => item.ProjectDescription.StartsWith("Build a raised timber deck", StringComparison.Ordinal));
+
+        // The deck failed an inspection by this inspector earlier, so a result stands. Book another and cancel it.
+        HttpResponseMessage booked = await clerk.PostAsJsonAsync(
+            $"/api/v1/applications/{deck.Id}/inspections", new ScheduleInspectionRequest(SampleIdentities.InspectorOne, DateTimeOffset.UtcNow.AddDays(5)), Token);
+        InspectionResponse extra = (await booked.Content.ReadFromJsonAsync<ApplicationResponse>(Token))!.Inspections.Single(inspection => inspection.Status == "Scheduled");
+        await clerk.PostAsJsonAsync($"/api/v1/applications/{deck.Id}/inspections/{extra.Id}/cancel", new ReasonRequest(null), Token);
+
+        Assert.Equal(HttpStatusCode.OK, (await inspector.GetAsync($"/api/v1/applications/{deck.Id}", Token)).StatusCode);
+        Assert.Contains(deck.Id, (await inspector.GetFromJsonAsync<PagedResponse<ApplicationSummaryResponse>>("/api/v1/applications?pageSize=50", Token))!.Items.Select(item => item.Id));
+    }
+
+    [Fact]
     public async Task A_clerk_can_cancel_a_booked_inspection_and_the_result_can_then_no_longer_be_recorded()
     {
         using SeededApi api = new();
@@ -382,9 +448,13 @@ public class HardeningTests
         Assert.Equal("Cancelled", after.Status);
         Assert.Equal("The inspector is unwell.", after.Notes);
 
-        HttpResponseMessage late = await inspector.PostAsJsonAsync($"/api/v1/applications/{id}/inspections/{booked.Id}/result", new InspectionResultRequest(true, null), Token);
+        // An administrator can still see the application, and the closed inspection refuses a result. The inspector it was
+        // booked for can no longer see the application at all (see the visibility tests), so for them it is a 404.
+        using HttpClient administrator = await api.SignInAsync(SeededApi.Administrator, Token);
+        HttpResponseMessage late = await administrator.PostAsJsonAsync($"/api/v1/applications/{id}/inspections/{booked.Id}/result", new InspectionResultRequest(true, null), Token);
         Assert.Equal(HttpStatusCode.Conflict, late.StatusCode);
         Assert.Equal("inspection.closed", (await Problem.ReadAsync(late, Token)).Code);
+        Assert.Equal(HttpStatusCode.NotFound, (await inspector.PostAsJsonAsync($"/api/v1/applications/{id}/inspections/{booked.Id}/result", new InspectionResultRequest(true, null), Token)).StatusCode);
     }
 
     [Fact]

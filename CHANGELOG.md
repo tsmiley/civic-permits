@@ -6,6 +6,11 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Security
+- Fixes from the whole-repository security review (ledger rows 3 to 15). The Lows: HSTS is two years with subdomains;
+  sample data and sample sign-ins are refused anywhere but Development; an inspector stops seeing an application once
+  their booking is cancelled before any visit; hosts refuse to start outside Development on an ASP.NET Core older than
+  10.0.7 (a version that let cookies be forged); the register and refresh routes and the site's register form have
+  rate-limit tests; the deployment guide names `AllowedHosts` and the minimum runtime.
 - Hardening after the independent review of S0 to S4. An applicant who does not own an application now gets the same
   refusal whatever its status; withdrawing or issuing cancels inspections still scheduled. The API is closed by
   default (a fallback policy requires a sign-in; ten operations are public and a test pins the list), and each

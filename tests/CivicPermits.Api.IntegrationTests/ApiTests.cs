@@ -105,17 +105,21 @@ public class ApiTests
         Assert.Equal(12, await database.PermitApplications.CountAsync(Token));
     }
 
-    [Fact]
-    public void Sample_data_is_refused_outright_in_production()
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    [InlineData("Test")]
+    public void Sample_data_and_its_sign_ins_are_refused_outright_anywhere_but_development(string environment)
     {
         using ApiFactory factory = new ApiFactory()
-            .InEnvironment("Production")
+            .InEnvironment(environment)
             .WithSetting("Database:MigrateOnStartup", "true")
             .WithSetting("Database:SeedSampleData", "true");
 
         InvalidOperationException refused = Assert.Throws<InvalidOperationException>(() => factory.CreateClient());
 
-        Assert.Contains("Production", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("Development", refused.Message, StringComparison.Ordinal);
+        Assert.Contains(environment, refused.Message, StringComparison.Ordinal);
     }
 
     [Fact]
