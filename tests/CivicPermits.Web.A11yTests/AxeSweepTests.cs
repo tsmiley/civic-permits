@@ -3,8 +3,8 @@ using Microsoft.Playwright;
 namespace CivicPermits.Web.A11yTests;
 
 /// <summary>
-/// The axe-core sweep: every page of the site, in every state a person can reach, as each kind of person who can
-/// reach it. A test collects the violations from all its states and reports them together.
+/// The axe-core sweep: the 53 page states listed in docs/ACCESSIBILITY_REPORT.md (the pages of the site in the states
+/// and as the kinds of person named there). A test collects the violations from all its states and reports them together.
 /// </summary>
 /// <remarks>
 /// Passing means axe found nothing it can find. It does not mean the site is accessible: automated rules reach a
