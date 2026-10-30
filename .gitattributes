@@ -1,0 +1,18 @@
+# Line endings are decided here, not inherited from whoever's machine committed last.
+* text=auto eol=lf
+
+*.cs text eol=lf
+*.razor text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.slnx text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.ps1 text eol=lf
+*.sh text eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

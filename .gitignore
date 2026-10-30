@@ -1,0 +1,51 @@
+# Build output
+bin/
+obj/
+[Bb]uild/
+artifacts/
+publish/
+
+# IDE and tool state
+.vs/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+.vscode/
+
+# Test and coverage output
+TestResults/
+coverage/
+*.trx
+*.coverage
+
+# Local databases and uploads (sample data comes from the seed, never from a committed file)
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+App_Data/
+uploads/
+
+# Secrets and local configuration: never committed. Use user-secrets or environment variables.
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+
+# Playwright
+playwright-report/
+test-results/
+.playwright/
+
+# Node tooling, if any
+node_modules/
+
+# OS noise
+.DS_Store
+Thumbs.db
