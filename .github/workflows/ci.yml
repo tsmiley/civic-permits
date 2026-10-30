@@ -42,14 +42,46 @@ jobs:
       - name: Build (warnings are errors)
         run: dotnet build CivicPermits.slnx --no-restore
 
+      # SQL Server for the Infrastructure tests, so both supported databases are tested on every push. This is the
+      # official Developer-edition image (free for development and testing). It is started here and not as a `services:`
+      # container because its password is made up for each run, and a service container's settings are fixed before any
+      # step can generate one. The password is masked before it is used anywhere, passed to Docker by name (never on a
+      # command line), kept only in this job's environment, and never written to a file or echoed.
+      - name: Start SQL Server with a password made up for this run
+        shell: bash
+        run: |
+          password="Aa1-$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          echo "CP_SQLSERVER_PASSWORD=$password" >> "$GITHUB_ENV"
+          export MSSQL_SA_PASSWORD="$password"
+          docker run --detach --name cp-sqlserver --publish 127.0.0.1:1433:1433 \
+            --env ACCEPT_EULA=Y --env MSSQL_PID=Developer --env MSSQL_SA_PASSWORD \
+            mcr.microsoft.com/mssql/server:2022-latest > /dev/null
+          for _ in $(seq 1 60); do
+            if (echo > /dev/tcp/127.0.0.1/1433) 2>/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "SQL Server did not open port 1433 in time."
+          docker logs cp-sqlserver | tail -n 20
+          exit 1
+
       # One project at a time: the browser tests start a real site and a real browser, and the others use databases.
       # The browser tests use the Chrome that GitHub's runners already have installed, so nothing is downloaded.
+      # CP_REQUIRE_SQLSERVER makes the SQL Server test fail, not skip, if the server cannot be reached.
       - name: Test
         shell: bash
+        env:
+          CP_REQUIRE_SQLSERVER: "true"
+          CP_SQLSERVER_HOST: "127.0.0.1,1433"
         run: |
           for project in Domain.Tests Application.Tests Infrastructure.Tests Api.IntegrationTests Web.IntegrationTests Web.A11yTests; do
             dotnet test "tests/CivicPermits.$project" --no-build
           done
+
+      - name: Stop SQL Server
+        if: always()
+        shell: bash
+        run: docker rm --force cp-sqlserver > /dev/null 2>&1 || true
 
       - name: Audit package licenses
         shell: pwsh

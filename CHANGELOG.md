@@ -21,6 +21,11 @@ All notable changes are recorded here, newest first. The format follows
   fails when it should and that each axe tag in use finds something, and ignores only a cancelled page navigation.
 - The security ledger has an Owner column and a row for the review.
 
+- CI runs the SQL Server tests on every push against the official Developer-edition container, with a password made up
+  inside the run and masked before any use (never in the repository, on a command line or in a log). The SQL Server test
+  now takes a server from `CP_SQLSERVER_PASSWORD` and `CP_SQLSERVER_HOST`, keeps LocalDB for Windows machines, and fails
+  instead of skipping when `CP_REQUIRE_SQLSERVER=true`.
+
 ### Added
 - S5: the documentation slice. A rewritten README with screenshots (generated from the running site, with text
   alternatives) and the work-in-progress banner removed; `docs/ARCHITECTURE.md` with the dependency rule, request

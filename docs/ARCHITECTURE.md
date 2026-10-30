@@ -189,7 +189,7 @@ stateDiagram-v2
 |---|---|---|
 | `Domain.Tests` | Unit | The rules, the value objects, and the workflow table against an independent specification; the diagrams in these documents |
 | `Application.Tests` | Unit | The dispatcher, including a handler that throws before it returns and a request that is two kinds of request |
-| `Infrastructure.Tests` | Real databases | Migrations on SQLite and SQL Server LocalDB, that the model and migrations agree, seeding, constraints, concurrency |
+| `Infrastructure.Tests` | Real databases | Migrations on SQLite and on SQL Server (a container in CI, LocalDB on Windows), that the model and migrations agree, seeding, constraints, concurrency |
 | `Api.IntegrationTests` | The real API in memory | Sign-in, every endpoint, authorization (including the exact list of public operations), error documents and their status mapping, rate limits, caching and security headers, refusal logging, token expiry, OpenAPI |
 | `Web.IntegrationTests` | The real site in memory | Session and anti-forgery cookies, sign-in and lockout, the same answer for a wrong password and an unknown address, return-address handling, caching and `Clear-Site-Data`, 403 and 404 behaviour, the content security policy |
 | `Web.A11yTests` | A real browser on the real site | Whole journeys, keyboard use, reflow, and the axe-core sweep; the headers real Kestrel sends; see [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md) |

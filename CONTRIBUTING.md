@@ -22,6 +22,11 @@ pwsh scripts/inspect.ps1              # JetBrains InspectCode: no warnings in th
 pwsh scripts/license-audit.ps1        # every package is MIT, Apache-2.0 or BSD (or a reviewed exception)
 ```
 
+The SQL Server test runs against LocalDB on Windows. On another machine it is skipped with a reason, unless you give it
+a server: set `CP_SQLSERVER_PASSWORD` (the `sa` password of a SQL Server you own, kept in your shell and never written
+into a file) and, if it is not on `localhost,1433`, `CP_SQLSERVER_HOST`. CI does exactly that with a container it starts
+for the run, and sets `CP_REQUIRE_SQLSERVER=true` so the test cannot be skipped there.
+
 ## Rules
 
 - **Original work only.** Nothing is copied or adapted from any employer, client or other private project. Every
