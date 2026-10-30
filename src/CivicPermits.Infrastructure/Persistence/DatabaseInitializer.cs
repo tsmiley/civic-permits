@@ -1,0 +1,56 @@
+using CivicPermits.Infrastructure.Persistence.Seeding;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace CivicPermits.Infrastructure.Persistence;
+
+/// <summary>Applies migrations and sample data at start-up, when the configuration asks for them.</summary>
+public static partial class DatabaseInitializer
+{
+    /// <summary>
+    /// Brings the database up to date, then seeds it. Does nothing unless <see cref="DatabaseOptions.MigrateOnStartup"/>
+    /// is set. Sample data is refused outright in Production, whatever the configuration says.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Sample data was requested in the Production environment.</exception>
+    public static async Task InitializeDatabaseAsync(this WebApplication app, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+        IServiceProvider services = scope.ServiceProvider;
+
+        DatabaseOptions options = services.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DatabaseInitializer));
+
+        if (options.SeedSampleData && app.Environment.IsProduction())
+        {
+            throw new InvalidOperationException("Sample data cannot be loaded in the Production environment.");
+        }
+
+        if (!options.MigrateOnStartup)
+        {
+            return;
+        }
+
+        CivicPermitsDbContext database = services.GetRequiredService<CivicPermitsDbContext>();
+        await database.Database.MigrateAsync(cancellationToken);
+        LogMigrated(logger, options.Provider);
+
+        if (options.SeedSampleData)
+        {
+            (int types, int applications) = await new SampleDataSeeder(database, services.GetRequiredService<TimeProvider>())
+                .SeedAsync(cancellationToken);
+            LogSeeded(logger, types, applications);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Database migrations are up to date ({Provider}).")]
+    private static partial void LogMigrated(ILogger logger, DatabaseProvider provider);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sample data: added {PermitTypes} permit types and {Applications} applications.")]
+    private static partial void LogSeeded(ILogger logger, int permitTypes, int applications);
+}

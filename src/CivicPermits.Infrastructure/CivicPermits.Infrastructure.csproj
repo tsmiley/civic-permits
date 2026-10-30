@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CivicPermits.Api.IntegrationTests" />
+    <InternalsVisibleTo Include="CivicPermits.Infrastructure.Tests" />
   </ItemGroup>
 
 </Project>

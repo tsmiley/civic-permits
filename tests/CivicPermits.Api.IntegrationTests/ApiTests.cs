@@ -3,6 +3,7 @@ using System.Text.Json;
 using CivicPermits.Application.Messaging;
 using CivicPermits.Infrastructure.Persistence;
 using CivicPermits.Shared.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
@@ -83,6 +84,47 @@ public class ApiTests
 
         Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
         Assert.Equal("Healthy", await ready.Content.ReadAsStringAsync(Token));
+    }
+
+    [Fact]
+    public async Task Migrating_and_seeding_on_start_make_the_api_ready_with_the_sample_town()
+    {
+        using ApiFactory factory = new ApiFactory()
+            .WithSetting("Database:MigrateOnStartup", "true")
+            .WithSetting("Database:SeedSampleData", "true");
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage ready = await client.GetAsync("/health/ready", Token);
+
+        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+
+        using IServiceScope scope = factory.Services.CreateScope();
+        CivicPermitsDbContext database = scope.ServiceProvider.GetRequiredService<CivicPermitsDbContext>();
+
+        Assert.Equal(9, await database.PermitTypes.CountAsync(Token));
+        Assert.Equal(12, await database.PermitApplications.CountAsync(Token));
+    }
+
+    [Fact]
+    public void Sample_data_is_refused_outright_in_production()
+    {
+        using ApiFactory factory = new ApiFactory()
+            .InEnvironment("Production")
+            .WithSetting("Database:MigrateOnStartup", "true")
+            .WithSetting("Database:SeedSampleData", "true");
+
+        InvalidOperationException refused = Assert.Throws<InvalidOperationException>(() => factory.CreateClient());
+
+        Assert.Contains("Production", refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Seeding_without_migrating_is_a_configuration_error()
+    {
+        using ApiFactory factory = new ApiFactory()
+            .WithSetting("Database:SeedSampleData", "true");
+
+        Assert.Throws<OptionsValidationException>(() => factory.CreateClient());
     }
 
     [Fact]

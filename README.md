@@ -55,20 +55,58 @@ Clean architecture in one solution. Dependencies point inward: the domain depend
 |---|---|
 | `CivicPermits.Domain` | Entities, value objects and rules. No dependencies. |
 | `CivicPermits.Application` | Use cases as request handlers behind a small dispatcher; contracts with the outer layers. |
-| `CivicPermits.Infrastructure` | EF Core (SQLite and SQL Server), ASP.NET Core Identity, logging, and the hosting pieces both web hosts share. |
+| `CivicPermits.Infrastructure` | EF Core (SQLite and SQL Server), ASP.NET Core Identity, logging, sample-data seeding, and the hosting pieces both web hosts share. |
+| `CivicPermits.Migrations.Sqlite`, `.SqlServer` | One migration history per database provider, kept out of Infrastructure so the two never mix. |
 | `CivicPermits.Api` | The REST API: problem-details errors, health checks, OpenAPI. |
 | `CivicPermits.Web` | The Blazor web site: server-rendered pages, accessibility built in. |
 | `CivicPermits.Shared` | Plain contracts shared by the API and its clients. |
 
-Tests: `Domain.Tests` and `Application.Tests` (unit), `Api.IntegrationTests` (the real API in memory),
-`Web.A11yTests` (a real browser driving the running site).
+Tests: `Domain.Tests` and `Application.Tests` (unit), `Infrastructure.Tests` (migrations, seeding and
+constraints against real SQLite and, where installed, SQL Server LocalDB), `Api.IntegrationTests` (the real API in
+memory), `Web.A11yTests` (a real browser driving the running site).
+
+## The domain
+
+A permit application moves through a fixed workflow, held as one table in `ApplicationWorkflow` and checked in
+the tests against a separate statement of the rules:
+
+```
+Draft ──submit──► Submitted ──start review──► InReview ──approve──► Approved ──issue──► Issued
+  │                  ▲                           │  └─deny──► Denied
+  │                  └────── submit again ───────┘
+  │                                   request corrections ──► CorrectionsRequested
+  └── withdraw (until the permit is issued or denied) ──► Withdrawn
+```
+
+The rules the code enforces, each with a test: only the applicant who owns an application can submit, edit or
+withdraw it; only staff review and decide; a reason is required to deny or to ask for corrections; the fee is
+worked out at submission from the permit type (a base amount plus a share of the declared value, in whole cents
+and basis points, never floating point); a permit is issued only once the fee is recorded as paid and, where the
+permit type needs one, the latest inspection has passed; every step is recorded with who took it and when.
+
+## Database
+
+SQLite is the default and needs nothing installed. Setting `Database:MigrateOnStartup` applies the migrations
+when the API starts, and `Database:SeedSampleData` (Development only, refused in Production) loads the fictional
+Town of Bramblewick: nine permit types and twelve applications at every stage of the process. Seeding is
+idempotent. Sample data holds no names, no email addresses and no passwords.
+
+To add a migration after changing the model (one per provider):
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/CivicPermits.Migrations.Sqlite --startup-project src/CivicPermits.Migrations.Sqlite --output-dir Migrations
+dotnet ef migrations add <Name> --project src/CivicPermits.Migrations.SqlServer --startup-project src/CivicPermits.Migrations.SqlServer --output-dir Migrations
+```
+
+A test fails if the model and either provider's migrations disagree.
 
 ## Status
 
 | Slice | What | State |
 |---|---|---|
 | S0 | Solution scaffold, hosting, health, problem details, CI | in review |
-| S1 | Domain model, workflow, database, sample data | planned |
+| S1 | Domain model, workflow, database, sample data | in review |
 | S2 | Identity, roles, API endpoints | planned |
 | S3 | Web interface | planned |
 | S4 | Automated and manual accessibility testing, report | planned |

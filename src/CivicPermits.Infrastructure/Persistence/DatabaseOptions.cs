@@ -17,4 +17,16 @@ public sealed class DatabaseOptions
     /// the signed-in Windows account. A deployment that needs a password supplies it by environment variable.
     /// </summary>
     public string ConnectionString { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether to apply any pending migrations when the host starts. Convenient for a demonstration and for
+    /// development; a real deployment applies migrations as a deliberate step before the new version runs.
+    /// </summary>
+    public bool MigrateOnStartup { get; set; }
+
+    /// <summary>
+    /// Whether to add the fictional town's sample data when the host starts. Needs <see cref="MigrateOnStartup"/>,
+    /// and is refused in the Production environment.
+    /// </summary>
+    public bool SeedSampleData { get; set; }
 }
