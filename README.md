@@ -61,7 +61,7 @@ To run the site with the fictional town's data and sample sign-ins, give it a pa
 read from the environment, and it is never written down:
 
 ```bash
-export Database__SampleUserPassword="a password of at least twelve characters"
+export Database__SampleUserPassword="a password of at least fifteen characters"
 dotnet run --project src/CivicPermits.Web
 ```
 

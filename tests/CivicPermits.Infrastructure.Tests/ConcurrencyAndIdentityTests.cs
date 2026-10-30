@@ -288,6 +288,6 @@ public class ConcurrencyAndIdentityTests
         Microsoft.Extensions.Options.OptionsValidationException failure = Assert.Throws<Microsoft.Extensions.Options.OptionsValidationException>(
             () => provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DatabaseOptions>>().Value);
 
-        Assert.Contains("at least 12", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("at least 15", failure.Message, StringComparison.Ordinal);
     }
 }

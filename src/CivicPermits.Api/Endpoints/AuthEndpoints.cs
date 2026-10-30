@@ -49,6 +49,14 @@ internal static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        auth.MapPost("/sign-out", SignOutAsync)
+            .RequireAuthorization(Policies.SignedIn)
+            .WithName("SignOut")
+            .WithSummary("Ends every refresh token of the signed-in account.")
+            .WithDescription("Changes the account's security stamp, so no refresh token made before this call can be exchanged again. An access token already issued keeps working until its 15 minutes are up.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         auth.MapGet("/me", MeAsync)
             .RequireAuthorization(Policies.SignedIn)
             .WithName("GetCurrentUser")
@@ -127,6 +135,24 @@ internal static class AuthEndpoints
         }
 
         return TypedResults.SignIn(await signIn.CreateUserPrincipalAsync(person), authenticationScheme: IdentityConstants.BearerScheme);
+    }
+
+    private static async Task<IResult> SignOutAsync(ICurrentUser user, UserManager<ApplicationUser> users)
+    {
+        Actor actor = user.Actor ?? throw new RequestException(RequestFailure.Unauthorized, "request.unauthorized", "Sign in to do this.");
+        ApplicationUser? person = await users.FindByIdAsync(actor.Id.ToString());
+
+        if (person is not null)
+        {
+            IdentityResult updated = await users.UpdateSecurityStampAsync(person);
+
+            if (!updated.Succeeded)
+            {
+                throw new InvalidOperationException("The security stamp could not be changed, so the refresh tokens were not ended: " + string.Join("; ", updated.Errors.Select(error => error.Code)));
+            }
+        }
+
+        return TypedResults.NoContent();
     }
 
     private static async Task<IResult> MeAsync(ICurrentUser user, UserManager<ApplicationUser> users)

@@ -51,16 +51,26 @@ public static class DependencyInjection
         services
             .AddIdentityCore<ApplicationUser>(options =>
             {
-                // Length beats composition rules. Twelve characters, no forced symbol soup.
-                options.Password.RequiredLength = 12;
+                // NIST SP 800-63B-4: length and a blocklist (CommonPasswordValidator), not rules about which kinds of
+                // character to include. Fifteen characters; spaces and 64 or more are accepted; no composition rules.
+                options.Password.RequiredLength = PasswordPolicy.MinimumLength;
+                options.Password.RequiredUniqueChars = 1;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
                 options.User.RequireUniqueEmail = true;
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddRoles<IdentityRole<Guid>>()
+            .AddPasswordValidator<CommonPasswordValidator>()
             .AddSignInManager()
             .AddEntityFrameworkStores<CivicPermitsDbContext>();
+
+        // The rulebook asks for at least 220,000 PBKDF2 iterations; Identity's default is 100,000. Hashes made with fewer are
+        // upgraded the next time their owner signs in.
+        services.Configure<PasswordHasherOptions>(hasher => hasher.IterationCount = PasswordPolicy.IterationCount);
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();

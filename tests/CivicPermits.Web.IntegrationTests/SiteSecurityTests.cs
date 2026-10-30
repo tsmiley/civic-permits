@@ -160,6 +160,42 @@ public class SiteSecurityTests
         Assert.Equal(HttpStatusCode.TooManyRequests, last);
     }
 
+    [Theory]
+    [InlineData("password123456789")]
+    [InlineData("Correct Horse Battery Staple")]
+    public async Task The_register_form_refuses_a_listed_password_and_says_why_without_echoing_it(string password)
+    {
+        using WebFactory factory = new();
+        using HttpClient client = factory.Client();
+        string html = await Forms.GetHtmlAsync(client, "/account/register", Token);
+
+        HttpResponseMessage response = await Forms.PostAsync(client, "/account/register", html, "register", new() { ["name"] = "New Person", ["email"] = "new.person@bramblewick.test", ["password"] = password }, Token);
+        string body = await response.Content.ReadAsStringAsync(Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("first that people guess", body, StringComparison.Ordinal);
+        Assert.DoesNotContain(password, body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_register_form_accepts_fifteen_characters_of_one_kind_and_the_new_account_can_sign_in()
+    {
+        using WebFactory factory = new();
+        using HttpClient client = factory.Client();
+        string html = await Forms.GetHtmlAsync(client, "/account/register", Token);
+
+        HttpResponseMessage refused = await Forms.PostAsync(client, "/account/register", html, "register", new() { ["name"] = "New Person", ["email"] = "new.person@bramblewick.test", ["password"] = "vkxjqpzmwnbthy" }, Token);
+        HttpResponseMessage accepted = await Forms.PostAsync(client, "/account/register", html, "register", new() { ["name"] = "New Person", ["email"] = "new.person@bramblewick.test", ["password"] = "vkxjqpzmwnbtyhd" }, Token);
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        Assert.Contains("15 characters", await refused.Content.ReadAsStringAsync(Token), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
+        Assert.StartsWith("/account/login", PathOf(accepted), StringComparison.Ordinal);
+
+        HttpResponseMessage signedIn = await Forms.SignInAsync(client, "new.person@bramblewick.test", "vkxjqpzmwnbtyhd", Token);
+        Assert.Equal(HttpStatusCode.Redirect, signedIn.StatusCode);
+    }
+
     [Fact]
     public async Task Signing_in_cannot_be_used_to_send_someone_to_another_site()
     {

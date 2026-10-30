@@ -7,7 +7,7 @@ enforces that). This page is the orientation: how to sign in, how errors look, a
 ## Try it
 
 ```bash
-export Database__SampleUserPassword="a password of at least twelve characters"   # yours to choose; never written down
+export Database__SampleUserPassword="a password of at least fifteen characters"   # yours to choose; never written down
 dotnet run --project src/CivicPermits.Api                                        # http://localhost:5210
 ```
 
@@ -37,7 +37,13 @@ curl http://localhost:5210/api/v1/applications?status=Approved \
 | `POST /auth/register` | Makes an applicant account. Answers 202 whether or not the address was already registered ([ADR 0011](adr/0011-registration-cannot-reveal-who-has-an-account.md)). |
 | `POST /auth/login` | Returns `{ tokenType, accessToken, expiresIn, refreshToken }`. Five wrong passwords lock the account for fifteen minutes. |
 | `POST /auth/refresh` | Exchanges a refresh token for a new pair; refused if the person's security stamp has changed. |
+| `POST /auth/sign-out` | Needs a sign-in. Changes the account's security stamp, so no refresh token made before the call can be exchanged again (answers 204). An access token already issued keeps working until its 15 minutes are up. |
 | `GET /auth/me` | Says who the access token belongs to and the role they act in. |
+
+**Passwords** follow NIST SP 800-63B-4: at least 15 characters, any characters (spaces included) up to 256, no rule about
+capitals, digits or symbols, and a refusal for a password on the bundled list of the ones people guess first or made only
+of them (a 422 whose message says so). The list ships inside the program and no password leaves the host. A password hash
+uses 250,000 PBKDF2-HMAC-SHA512 iterations.
 
 Access tokens last 15 minutes and refresh tokens 8 hours. They are opaque and protected with the host's data-protection
 keys ([ADR 0007](adr/0007-opaque-bearer-tokens-and-cookie-sessions.md)). Registration, sign-in and refresh are rate

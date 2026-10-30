@@ -15,7 +15,7 @@ Nested names use a double underscore in environment variables.
 | `Database__ConnectionString` | `Data Source=civic-permits.db` | SQLite is a file path; SQL Server uses Windows authentication on LocalDB. A deployment that needs a password supplies the whole string by environment variable, never in a file in the repository. |
 | `Database__MigrateOnStartup` | `false` (`true` in Development) | Apply pending migrations when the host starts. A real deployment applies migrations as a deliberate step before the new version runs. |
 | `Database__SeedSampleData` | `false` (`true` in Development) | Load the fictional town. Needs `MigrateOnStartup`, and is **refused outright anywhere but Development**, Staging included, so no sample sign-in can exist on a deployed host. |
-| `Database__SampleUserPassword` | unset | The password for the sample sign-ins, at least twelve characters. Environment or user secrets only. |
+| `Database__SampleUserPassword` | unset | The password for the sample sign-ins, at least fifteen characters (the password policy's minimum). Environment or user secrets only. |
 | `AllowedHosts` | `*` | **Set this in production** to the real host names, separated by semicolons (for example `permits.example.org`). The shipped `*` accepts any `Host` header. The cookie handler builds absolute redirect addresses from the request's host, so a forged one affects only the sender's own response today, but nothing should depend on that. |
 | `Hosting__RedirectToHttps` | `true` | Turn off only behind a proxy that already terminates TLS and redirects |
 | `RateLimiting__AuthPerWindow` | 10 | Sign-in, registration and refresh, per client address |

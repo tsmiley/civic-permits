@@ -18,7 +18,7 @@
     <TextField Id="email" Label="Email address" Type="email" Required="true" AutoComplete="email"
                Value="@Posted("email")" Error="@ErrorFor("email")" MaxLength="256" />
     <TextField Id="password" Label="Password" Type="password" Required="true" AutoComplete="new-password"
-               Hint="At least 12 characters, with an upper-case letter, a lower-case letter and a number. A sentence you can remember works well."
+               Hint="At least 15 characters. Spaces are fine, so a sentence you can remember works well. Very common passwords are not accepted."
                Error="@ErrorFor("password")" />
     <button type="submit" class="button">Make account</button>
 </form>
