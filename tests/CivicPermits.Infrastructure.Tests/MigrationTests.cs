@@ -12,7 +12,8 @@ public class MigrationTests
         await using CivicPermitsDbContext context = database.CreateContext();
 
         Assert.Empty(await context.Database.GetPendingMigrationsAsync(TestContext.Current.CancellationToken));
-        Assert.Equal(2, (await context.Database.GetAppliedMigrationsAsync(TestContext.Current.CancellationToken)).Count());
+        // Every migration in the assembly was applied, however many there are by now.
+        Assert.Equal(context.Database.GetMigrations().Count(), (await context.Database.GetAppliedMigrationsAsync(TestContext.Current.CancellationToken)).Count());
         Assert.False(context.Database.HasPendingModelChanges(), "The model changed but no migration was added for SQLite.");
     }
 
@@ -38,6 +39,7 @@ public class MigrationTests
 
         Assert.Equal(0, await context.PermitTypes.CountAsync(TestContext.Current.CancellationToken));
         Assert.Equal(0, await context.PermitApplications.CountAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(0, await context.AuditEntries.CountAsync(TestContext.Current.CancellationToken));
         Assert.Equal(0, await context.Users.CountAsync(TestContext.Current.CancellationToken));
         Assert.Equal(0, await context.Roles.CountAsync(TestContext.Current.CancellationToken));
     }

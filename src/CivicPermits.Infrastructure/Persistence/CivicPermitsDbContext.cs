@@ -21,6 +21,9 @@ public class CivicPermitsDbContext(DbContextOptions<CivicPermitsDbContext> optio
     /// <summary>The kinds of permit the office offers.</summary>
     public DbSet<PermitType> PermitTypes => Set<PermitType>();
 
+    /// <summary>The audit record. Only ever added to.</summary>
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+
     /// <summary>Every application, with its history and inspections.</summary>
     public DbSet<PermitApplication> PermitApplications => Set<PermitApplication>();
 

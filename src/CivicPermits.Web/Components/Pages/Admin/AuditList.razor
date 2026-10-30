@@ -1,0 +1,56 @@
+@page "/admin/audit"
+@attribute [Authorize(Roles = "Administrator")]
+@inherits CivicPage
+
+<PageTitle>Audit record - Civic Permits</PageTitle>
+
+<h1>Audit record</h1>
+
+<p>Who changed the office's fee schedule, ran the retention purge or closed an account, when, and what changed. Entries
+    are only ever added: this page can show them, and nothing on it can change or remove one.</p>
+
+@if (_page is { Items.Count: 0 })
+{
+    <p>Nothing has been recorded yet.</p>
+}
+else if (_page is not null)
+{
+    <div class="table-wrap" role="region" aria-labelledby="audit-caption" tabindex="0">
+        <table>
+            <caption id="audit-caption">The audit record, newest first. @_page.TotalCount in all.</caption>
+            <thead>
+                <tr>
+                    <th scope="col">When</th>
+                    <th scope="col">Who</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">What changed</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (AuditEntryResponse entry in _page.Items)
+                {
+                    <tr>
+                        <th scope="row"><time datetime="@Display.Iso(entry.OccurredOn)">@Display.DateTime(entry.OccurredOn)</time></th>
+                        <td>@entry.ActorName</td>
+                        <td>@entry.Action</td>
+                        <td>@entry.Summary</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <Pager Page="@_page.Page" PageSize="@_page.PageSize" Total="@_page.TotalCount" LinkFor="@LinkFor" />
+}
+
+@code {
+    private PagedResponse<AuditEntryResponse>? _page;
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Page { get; set; }
+
+    protected override async Task OnInitializedAsync() =>
+        _page = await TryAsync(() => Dispatcher.SendAsync(new CivicPermits.Application.Permits.ListAuditQuery(Math.Max(Page ?? 1, 1), 20), Cancel));
+
+    private static string LinkFor(int page) => "/admin/audit?page=" + page;
+}

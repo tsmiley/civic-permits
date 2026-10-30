@@ -80,7 +80,8 @@ request's correlation id (also in the `X-Correlation-Id` header):
 | Area | Endpoints | Who |
 |---|---|---|
 | Permit types | `GET /permit-types`, `GET /permit-types/{id}` | anyone |
-| | `POST /permit-types`, `PUT /permit-types/{id}`, `POST /permit-types/{id}/open`, `/close` | administrators |
+| | `POST /permit-types`, `PUT /permit-types/{id}`, `POST /permit-types/{id}/open`, `/close` | administrators; each writes one entry to the audit record |
+| Audit | `GET /audit` | administrators; read only: nothing in the API adds to, changes or removes an entry |
 | Applications | `POST /applications`, `PUT /applications/{id}`, `POST .../submit`, `.../withdraw` | the applicant who owns it |
 | | `POST .../start-review`, `.../request-corrections`, `.../approve`, `.../deny`, `.../issue`, `.../payment`, `.../inspections` | clerks and administrators |
 | | `POST .../inspections/{id}/result` | the assigned inspector, or an administrator |

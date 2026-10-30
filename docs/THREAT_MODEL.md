@@ -34,6 +34,7 @@ at each release.
 | Duplicate or wasted permit numbers | A per-year counter saved with the submission, guarded by a concurrency token, with a unique index behind it | `Two_requests_cannot_be_given_the_same_number` |
 | Guessing passwords | Fifteen-character minimum with no composition rules and a bundled blocklist of the passwords people guess first (NIST SP 800-63B-4; it is a floor, not a breached-password corpus); hashes use 250,000 PBKDF2-HMAC-SHA512 iterations; five failures lock for fifteen minutes; per-address rate limit (ten sign-in attempts a minute by default, with no settings at all); one answer for every failure | `Five_wrong_passwords_lock_the_account...`, `With_no_settings_at_all_the_eleventh_sign_in_attempt_in_a_minute_is_refused`, `The_rate_limit_defaults_are_pinned`, `PasswordPolicyTests`, `PasswordAndSignOutTests` |
 | Finding out who has an account | Registration answers a taken address like a new one; sign-in gives one answer, and an address nobody registered costs the same password check as one that exists, so the time does not tell them apart (equalised work, not a measured guarantee); the public lookup treats malformed and unknown numbers alike | `Registering_an_address_that_exists_looks_exactly_like...`, `An_address_nobody_registered_costs_as_many_password_checks_as_one_that_exists`, `A_wrong_password_and_an_unknown_address_get_the_same_page` |
+| An administrator changing the fee schedule with no trace | Creating, changing, opening and closing a permit type each write one audit entry (who, when, what, with old and new values) in the same save as the change; a refused or failed action writes none; administrators read it, and nothing in the API or the site can add to, change or remove an entry | `AuditTests` (one entry per action, none per refusal, administrator-only read, GET is the only method on the route), `AuditPageTests` |
 | An endpoint added later that nobody remembered to protect | The API requires a signed-in person by default; the ten public operations are marked one by one and a test pins that exact list | `Exactly_the_ten_public_operations_are_open_to_anyone_and_everything_else_needs_a_sign_in_by_default` |
 | Another person using the same browser after sign-out, or a shared cache | Everything the API sends, and every page a signed-in person receives or the account pages, carries `Cache-Control: no-store`; signing out sends `Clear-Site-Data` for cache, cookies and storage | `Responses_that_carry_a_persons_data_are_never_kept`, `Pages_a_signed_in_person_receives_and_the_account_pages_are_never_kept_...`, `Signing_out_tells_the_browser_to_forget_the_site_...` |
 | Learning what the server runs | The server does not send a `Server` header, and no `X-Powered-By` is sent | `The_real_server_names_neither_itself_nor_its_version...` (real Kestrel, over a socket) |
@@ -63,7 +64,10 @@ at each release.
   production service would add a breached-password check, which needs the network.
 - **No multi-factor sign-in, no password reset, no email confirmation.** All need an email service; listed in
   [DEPLOYMENT.md](DEPLOYMENT.md).
-- **No audit trail beyond each application's own history.** A refused request (not signed in, forbidden, hidden,
+- **The audit record is not tamper-proof.** It is only ever added to by the program, but someone with write access to the
+  database could still edit it; making it append-only at the database level (a trigger, a ledger table, or shipping the
+  entries to storage the application cannot write to) is a deployment decision. Sign-ins are still not in it.
+- **The log is not an audit trail.** A refused request (not signed in, forbidden, hidden,
   rate limited, or a failed sign-in for a real account) leaves one log line with the account's id, the method, the route
   and the code, and never an address, password or token. Successful sign-ins are not logged by the application, and
   nothing is stored in a record that can be queried.

@@ -6,6 +6,10 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Security
+- Fixes from the whole-repository security review, part 3 (ledger row 13): an audit record for permit-type administration.
+  Creating, changing, opening and closing a permit type each write one entry (actor, time, action, old and new values) in
+  the same save as the change; a refused or failed action writes none. Administrators read it at `GET /api/v1/audit` and
+  on the `/admin/audit` page; nothing can add to, change or remove an entry. New migration `AuditEntries` for both providers.
 - Fixes from the whole-repository security review, part 2 (ledger rows 5, 6 and 15): passwords follow NIST SP 800-63B-4
   (15 characters or more, no composition rules, a bundled blocklist of the passwords people guess first, 256 at most);
   hashes use 250,000 PBKDF2 iterations (existing ones are upgraded at the next sign-in); `POST /auth/sign-out` ends every

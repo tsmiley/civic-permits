@@ -76,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IPermitTypeStore, PermitTypeStore>();
+        services.AddScoped<IAuditLog, AuditLog>();
         services.AddScoped<IPermitApplicationStore, PermitApplicationStore>();
         services.AddScoped<IPermitNumberAllocator, PermitNumberAllocator>();
         services.AddScoped<IUserDirectory, UserDirectory>();

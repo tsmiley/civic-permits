@@ -1,4 +1,5 @@
 using CivicPermits.Domain.Applications;
+using CivicPermits.Domain.Common;
 using CivicPermits.Domain.Permits;
 using CivicPermits.Shared.Contracts;
 
@@ -35,6 +36,15 @@ public interface IPermitTypeStore
     void Add(PermitType type);
 }
 
+/// <summary>The audit record: what privileged people did, only ever added to.</summary>
+public interface IAuditLog
+{
+    /// <summary>Starts keeping an entry. It is saved with the handler's own changes, so a refused or failed action leaves none.</summary>
+    void Add(AuditEntry entry);
+
+    /// <summary>One page of entries, newest first, with the names of the accounts that acted.</summary>
+    Task<PagedResponse<AuditEntryResponse>> ListAsync(int page, int pageSize, CancellationToken cancellationToken);
+}
 /// <summary>Which applications a search should return.</summary>
 /// <param name="Status">Only this status, or any.</param>
 /// <param name="ApplicantId">Only this applicant's, or anyone's.</param>
