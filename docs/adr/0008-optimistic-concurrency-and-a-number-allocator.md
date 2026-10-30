@@ -17,7 +17,10 @@ wasted by a request that fails.
   seeder advances the counter past the numbers it writes.
 
 ## Consequences
-- No locks held across a request, and lost updates are impossible rather than unlikely.
+- No locks held across a request, and lost updates to an application or a permit number are impossible rather than
+  unlikely. The guard covers applications only: a permit type has no version, so two administrators editing the same
+  type at once would be last-write-wins. That is acceptable for a rarely edited, administrator-only record, and it is
+  listed here so nobody assumes otherwise.
 - A losing request gets a clear conflict and the person reloads; there is no automatic merge.
 - Numbers within a year are gap-free in the absence of failures at save time, and restart each year.
 

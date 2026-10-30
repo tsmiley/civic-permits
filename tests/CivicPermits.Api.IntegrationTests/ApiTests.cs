@@ -128,15 +128,24 @@ public class ApiTests
     }
 
     [Fact]
-    public async Task An_unknown_route_is_answered_with_a_problem_document()
+    public async Task An_unknown_route_is_a_404_problem_document_for_someone_signed_in_and_a_401_for_someone_who_is_not()
     {
-        using ApiFactory factory = new();
-        using HttpClient client = factory.CreateClient();
+        using SeededApi api = new();
+        using HttpClient anonymous = api.Anonymous();
+        using HttpClient applicant = await api.SignInAsync(SeededApi.ApplicantOne, Token);
 
-        HttpResponseMessage response = await client.GetAsync("/api/v1/nothing-here", Token);
+        HttpResponseMessage signedIn = await applicant.GetAsync("/api/v1/nothing-here", Token);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.NotFound, signedIn.StatusCode);
+        Assert.Equal("application/problem+json", signedIn.Content.Headers.ContentType?.MediaType);
+
+        // The API is closed by default, so a stranger cannot tell a route that does not exist from one that does.
+        HttpResponseMessage stranger = await anonymous.GetAsync("/api/v1/nothing-here", Token);
+        HttpResponseMessage realButClosed = await anonymous.GetAsync("/api/v1/applications", Token);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, stranger.StatusCode);
+        Assert.Equal(realButClosed.StatusCode, stranger.StatusCode);
+        Assert.Equal("application/problem+json", stranger.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]

@@ -185,16 +185,11 @@ public class ApplicationApiTests
         using HttpClient applicant = await api.SignInAsync(SeededApi.ApplicantOne, Token);
         ApplicationResponse submitted = await CreateAndSubmitAsync(applicant, await TypeIdAsync(applicant, "Fence and small structure permit", Token), 0, Token);
 
-        // Starting the review is a real next step for a submitted application, so the refusal is about the role.
-        HttpResponseMessage startReview = await applicant.PostAsJsonAsync($"/api/v1/applications/{submitted.Id}/start-review", new ReasonRequest(null), Token);
-        Assert.Equal(HttpStatusCode.Forbidden, startReview.StatusCode);
-        Assert.Equal("workflow.role_not_allowed", (await Problem.ReadAsync(startReview, Token)).Code);
-
-        // The others are not possible yet whoever asks; either way nothing happens.
-        foreach (string step in new[] { "approve", "deny", "request-corrections", "issue" })
+        // Every staff step is closed to an applicant at the endpoint, whether or not the workflow would allow it now.
+        foreach (string step in new[] { "start-review", "approve", "deny", "request-corrections", "issue" })
         {
             HttpResponseMessage response = await applicant.PostAsJsonAsync($"/api/v1/applications/{submitted.Id}/{step}", new ReasonRequest("Because I would like it."), Token);
-            Assert.Contains(response.StatusCode, new[] { HttpStatusCode.Forbidden, HttpStatusCode.Conflict });
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         Assert.Equal(HttpStatusCode.Forbidden, (await applicant.PostAsync($"/api/v1/applications/{submitted.Id}/payment", null, Token)).StatusCode);

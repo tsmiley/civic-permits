@@ -41,7 +41,7 @@ WebApplication app = builder.Build();
 
 await app.InitializeDatabaseAsync();
 
-app.UseCivicPermitsCommon(SecurityHeadersPolicy.ForWebSite);
+app.UseCivicPermitsCommon(SecurityHeadersPolicy.ForWebSite, NoStoreScope.SignedInPages);
 
 if (!app.Environment.IsDevelopment())
 {

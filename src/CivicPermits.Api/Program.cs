@@ -15,7 +15,7 @@ WebApplication app = builder.Build();
 
 await app.InitializeDatabaseAsync();
 
-app.UseCivicPermitsCommon(SecurityHeadersPolicy.ForApi);
+app.UseCivicPermitsCommon(SecurityHeadersPolicy.ForApi, NoStoreScope.Api);
 
 // Expected failures become problem documents with a stable code; anything else becomes a bare 500.
 app.UseExceptionHandler();
@@ -27,7 +27,7 @@ app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.MapCivicPermitsHealth();

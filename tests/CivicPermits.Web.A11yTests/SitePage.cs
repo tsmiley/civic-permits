@@ -67,13 +67,18 @@ internal sealed partial class SitePage : IAsyncDisposable
         page.PageError += (_, error) => session.Problems.Add($"page error: {error}");
         page.RequestFailed += (_, request) =>
         {
-            // A page or a data request the browser itself cancels because the person moved on (a click on a link while
-            // the last page was still loading) is not a fault in the site. A script, style or image that fails is.
-            bool cancelledNavigation = request.Failure == "net::ERR_ABORTED" && request.ResourceType is "document" or "fetch" or "xhr";
+            // A page the browser itself cancels because the person moved on (a click on a link while the last page was
+            // still loading) is not a fault in the site. Every other failed request is, a script, style, image or data call included.
+            // The framework's enhanced navigation fetches the next page with a script instead of the browser's own
+            // document request, so a GET that asks for HTML is the same kind of request and is treated the same way.
+            bool cancelledNavigation = request.Failure == "net::ERR_ABORTED" && (request.ResourceType == "document"
+                || (request.ResourceType == "fetch" && request.Method == "GET"
+                    && request.Headers.TryGetValue("accept", out string? accept)
+                    && accept.StartsWith("text/html", StringComparison.OrdinalIgnoreCase)));
 
             if (!cancelledNavigation)
             {
-                session.Problems.Add($"request failed: {request.Url} {request.Failure}");
+                session.Problems.Add($"failed {request.ResourceType} {request.Failure}: {request.Url}");
             }
         };
 

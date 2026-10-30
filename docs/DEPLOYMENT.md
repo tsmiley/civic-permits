@@ -59,6 +59,18 @@ Two things need configuring that the code cannot guess:
 TLS belongs to the proxy or the host. In Production the site sets `Secure` on its cookies and sends HSTS; set
 `Hosting__RedirectToHttps` to `false` only when the proxy already redirects.
 
+## Headers and caching
+
+Both hosts send the same security headers on every response, success or refusal, page or file: a content security
+policy with no inline script or style, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`,
+`Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-site` and
+`X-Permitted-Cross-Domain-Policies: none`, plus `Strict-Transport-Security` outside Development. The server sends no
+`Server` header. Tests check this in memory and, for the `Server` header, against real Kestrel.
+
+Nothing a signed-in person receives is kept: every API response and every page served to a signed-in person, and the
+account pages, carry `Cache-Control: no-store`. Signing out sends `Clear-Site-Data` for cache, cookies and storage.
+Public pages and static files may be cached. A proxy or CDN in front must not override these headers.
+
 ## Logging
 
 Structured logging through Serilog to the console. Every line carries the request's correlation id; a failure's problem
@@ -66,6 +78,11 @@ document and the log line share it. Request logging is on, and records paths and
 design the application does not write passwords, tokens or connection strings to the log; that is reviewed, not covered by
 an automated test. A test does check that a deliberate failure never reaches the response, and the logging configuration
 keeps the framework at Warning.
+
+A refused request leaves one extra line at Warning: not signed in, forbidden, rate limited, a redirect to sign-in or to the access-denied page, or any
+request that was answered with a stable error code. It names the account's id (never its address), the method, the route
+pattern, the status and the code, and tests check that no email address, password or token appears in any event. A
+successful sign-in is not logged by the application.
 
 ## Backups and data
 
@@ -79,8 +96,8 @@ This list is the point of this page.
 - **No email.** There is no email confirmation, no password reset, and no notification to an applicant when a decision
   is made. A production service needs an email service and the flows that use it ([ADR 0011](adr/0011-registration-cannot-reveal-who-has-an-account.md)).
 - **No payment.** The fee is recorded as paid by a clerk at the counter. No card input exists, by design.
-- **One database, one writer pattern.** The design is correct for several instances (concurrency is guarded in the
-  database), but it has only been run as one.
+- **One database, one writer pattern.** The design is correct for several instances (concurrency on applications and
+  permit numbers is guarded in the database; permit-type edits are last-write-wins), but it has only been run as one.
 - **No multi-factor sign-in, and no audit log beyond each application's own history.**
 - **Session ends silently after 8 hours** without activity ([accessibility report, 2.2.1](ACCESSIBILITY_REPORT.md)).
 - **Times are UTC.** The town's time zone is not used.

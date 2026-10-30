@@ -3,8 +3,8 @@ using Microsoft.Playwright;
 namespace CivicPermits.Web.A11yTests;
 
 /// <summary>
-/// The axe-core sweep: every page of the site, in every state a person can reach, as each kind of person who can
-/// reach it. A test collects the violations from all its states and reports them together.
+/// The axe-core sweep: the 53 page states listed in docs/ACCESSIBILITY_REPORT.md (the pages of the site in the states
+/// and as the kinds of person named there). A test collects the violations from all its states and reports them together.
 /// </summary>
 /// <remarks>
 /// Passing means axe found nothing it can find. It does not mean the site is accessible: automated rules reach a
@@ -25,18 +25,32 @@ public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
         await using SitePage visitor = await SitePage.OpenAsync(site);
         await visitor.GoAsync("/account/login");
 
+        // Two of the defects are chosen so that only one tag finds each: contrast is a WCAG 2.0 AA rule and an invalid
+        // autocomplete token is a WCAG 2.1 AA rule, so dropping either tag from the sweep makes this test fail.
+        // The faint colours are set through the object model because the page's policy forbids inline style attributes.
         await visitor.Page.EvaluateAsync(
             """
-            () => document.querySelector('main').insertAdjacentHTML('beforeend',
-              '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">'
-              + '<button type="button"></button>'
-              + '<input type="text" id="unlabelled-canary">'
-              + '<a href="/" tabindex="0"></a>')
+            () => {
+              document.querySelector('main').insertAdjacentHTML('beforeend',
+                '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">'
+                + '<button type="button"></button>'
+                + '<input type="text" id="unlabelled-canary">'
+                + '<a href="/" tabindex="0"></a>'
+                + '<p id="contrast-canary">Faint text</p>'
+                + '<input type="text" id="autocomplete-canary" aria-label="Canary" autocomplete="not-a-real-token">');
+              const faint = document.getElementById('contrast-canary');
+              faint.style.color = '#cccccc';
+              faint.style.backgroundColor = '#ffffff';
+            }
             """);
 
         AxeSweep sweep = new();
         await sweep.ScanAsync(visitor.Page, "canary");
         string found = string.Join("\n", sweep.Violations);
+
+        // The assertion every other test relies on must itself fail when there are violations.
+        Xunit.Sdk.XunitException refusal = Assert.ThrowsAny<Xunit.Sdk.XunitException>(sweep.AssertClean);
+        Assert.Contains("accessibility violation(s)", refusal.Message, StringComparison.Ordinal);
 
         Assert.Matches(@"^4\.\d+\.\d+$", AxeSweep.EngineVersion ?? "none");
         await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, "axe-engine-version.txt"), AxeSweep.EngineVersion, TestContext.Current.CancellationToken);
@@ -44,6 +58,8 @@ public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
         Assert.Contains("button-name", found, StringComparison.Ordinal);
         Assert.Contains("label", found, StringComparison.Ordinal);
         Assert.Contains("link-name", found, StringComparison.Ordinal);
+        Assert.Contains("color-contrast", found, StringComparison.Ordinal);
+        Assert.Contains("autocomplete-valid", found, StringComparison.Ordinal);
     }
 
     [Fact]

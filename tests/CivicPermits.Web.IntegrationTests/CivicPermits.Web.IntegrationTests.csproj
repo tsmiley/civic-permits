@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The real web site in memory: its pipeline, cookies, forms and headers, without a browser. The browser project drives the same site in Chrome. -->
+  <PropertyGroup>
+    <RootNamespace>CivicPermits.Web.IntegrationTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3.mtp-off" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CivicPermits.Web\CivicPermits.Web.csproj" />
+  </ItemGroup>
+
+</Project>

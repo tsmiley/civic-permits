@@ -13,4 +13,8 @@
     <ProjectReference Include="..\CivicPermits.Shared\CivicPermits.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="CivicPermits.Web.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

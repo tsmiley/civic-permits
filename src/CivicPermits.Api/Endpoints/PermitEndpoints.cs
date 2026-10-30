@@ -32,6 +32,7 @@ internal static class PermitEndpoints
     {
         types.MapGet("/", async (bool? includeInactive, IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new ListPermitTypesQuery(includeInactive ?? false), cancel)))
+            .AllowAnonymous()
             .WithName("ListPermitTypes")
             .WithSummary("Lists the kinds of permit. Needs no sign-in.")
             .WithDescription("Staff may add includeInactive=true to see the types closed to new applications.")
@@ -39,6 +40,7 @@ internal static class PermitEndpoints
 
         types.MapGet("/{id:guid}", async (Guid id, IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new GetPermitTypeQuery(id), cancel)))
+            .AllowAnonymous()
             .WithName("GetPermitType")
             .WithSummary("Reads one kind of permit. Needs no sign-in.")
             .Produces<PermitTypeResponse>()
@@ -128,13 +130,13 @@ internal static class PermitEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
-        MapStep(applications, "submit", ApplicationAction.Submit, "SubmitApplication", "Sends the application to the office. Its applicant only.");
-        MapStep(applications, "withdraw", ApplicationAction.Withdraw, "WithdrawApplication", "Withdraws the application. Its applicant only. A reason is optional.");
-        MapStep(applications, "start-review", ApplicationAction.StartReview, "StartReview", "Takes a submitted application into review. Staff only.");
-        MapStep(applications, "request-corrections", ApplicationAction.RequestCorrections, "RequestCorrections", "Sends the application back to the applicant. Staff only. A reason is required.");
-        MapStep(applications, "approve", ApplicationAction.Approve, "ApproveApplication", "Approves the application. Staff only. A note is optional.");
-        MapStep(applications, "deny", ApplicationAction.Deny, "DenyApplication", "Refuses the application. Staff only. A reason is required.");
-        MapStep(applications, "issue", ApplicationAction.Issue, "IssuePermit", "Issues the permit once the fee is paid and any inspection has passed. Staff only.");
+        MapStep(applications, "submit", ApplicationAction.Submit, Policies.Applicant, "SubmitApplication", "Sends the application to the office. Its applicant only.");
+        MapStep(applications, "withdraw", ApplicationAction.Withdraw, Policies.Applicant, "WithdrawApplication", "Withdraws the application. Its applicant only. A reason is optional.");
+        MapStep(applications, "start-review", ApplicationAction.StartReview, Policies.Staff, "StartReview", "Takes a submitted application into review. Staff only.");
+        MapStep(applications, "request-corrections", ApplicationAction.RequestCorrections, Policies.Staff, "RequestCorrections", "Sends the application back to the applicant. Staff only. A reason is required.");
+        MapStep(applications, "approve", ApplicationAction.Approve, Policies.Staff, "ApproveApplication", "Approves the application. Staff only. A note is optional.");
+        MapStep(applications, "deny", ApplicationAction.Deny, Policies.Staff, "DenyApplication", "Refuses the application. Staff only. A reason is required.");
+        MapStep(applications, "issue", ApplicationAction.Issue, Policies.Staff, "IssuePermit", "Issues the permit once the fee is paid and any inspection has passed. Staff only.");
 
         applications.MapPost("/{id:guid}/payment", async (Guid id, IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new RecordFeePaymentCommand(id), cancel)))
@@ -181,9 +183,10 @@ internal static class PermitEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
     }
 
-    private static void MapStep(RouteGroupBuilder applications, string path, ApplicationAction action, string name, string summary) =>
+    private static void MapStep(RouteGroupBuilder applications, string path, ApplicationAction action, string policy, string name, string summary) =>
         applications.MapPost($"/{{id:guid}}/{path}", async (Guid id, ReasonRequest? body, IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new TransitionApplicationCommand(id, action, body?.Reason), cancel)))
+            .RequireAuthorization(policy)
             .WithName(name)
             .WithSummary(summary)
             .Produces<ApplicationResponse>()
@@ -196,6 +199,7 @@ internal static class PermitEndpoints
     {
         publicApi.MapGet("/permits/{number}", async (string number, IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new LookupPermitQuery(number), cancel)))
+            .AllowAnonymous()
             .RequireRateLimiting(RateLimits.Public)
             .WithName("LookUpPermit")
             .WithSummary("Looks up a permit by its number. Needs no sign-in.")

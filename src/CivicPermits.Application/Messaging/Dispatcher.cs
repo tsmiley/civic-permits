@@ -12,14 +12,15 @@ namespace CivicPermits.Application.Messaging;
 /// </remarks>
 internal sealed class Dispatcher(IServiceProvider services) : IDispatcher
 {
-    private static readonly ConcurrentDictionary<Type, HandlerInvoker> Invokers = new();
+    // Keyed by the request type and the response it is sent for: one request type can implement IRequest<> more than once.
+    private static readonly ConcurrentDictionary<(Type Request, Type Response), HandlerInvoker> Invokers = new();
 
     public ValueTask<TResponse> SendAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         Type requestType = request.GetType();
-        HandlerInvoker invoker = Invokers.GetOrAdd(requestType, static type => HandlerInvoker.For(type, typeof(TResponse)));
+        HandlerInvoker invoker = Invokers.GetOrAdd((requestType, typeof(TResponse)), static key => HandlerInvoker.For(key.Request, key.Response));
 
         object handler = services.GetService(invoker.HandlerType)
             ?? throw new InvalidOperationException(
@@ -38,6 +39,8 @@ internal sealed class Dispatcher(IServiceProvider services) : IDispatcher
         }
 
         public object Invoke(object handler, object request, CancellationToken cancellationToken) =>
-            Method.Invoke(handler, [request, cancellationToken])!;
+            // DoNotWrapExceptions: a handler that throws before it returns (a method that is not async) must surface its own
+            // exception, not a TargetInvocationException that every caller would have to unwrap.
+            Method.Invoke(handler, System.Reflection.BindingFlags.DoNotWrapExceptions, binder: null, [request, cancellationToken], culture: null)!;
     }
 }

@@ -135,6 +135,10 @@ public abstract class CivicPage : ComponentBase
         }
         catch (RequestException failure) when (failure.Failure == RequestFailure.NotFound)
         {
+            // For the refusal log: a thing someone may not know about is logged as refused, not as missing.
+            Http?.Items[CivicPermits.Infrastructure.Hosting.RefusalLogMiddleware.CodeKey] = failure.Code;
+            Http?.Items[CivicPermits.Infrastructure.Hosting.RefusalLogMiddleware.RouteKey] =
+                (Http.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText;
             Navigation.NotFound();
 
             return default;

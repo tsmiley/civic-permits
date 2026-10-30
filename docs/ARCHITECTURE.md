@@ -59,9 +59,11 @@ sequenceDiagram
     Page-->>Clerk: redirect to the application, with a status message
 ```
 
-Every method on the aggregate checks the same three things in the same order: that the workflow allows the step,
-that the person's role may take it (and, for an applicant, that the application is theirs), and the rules specific
-to the step. A step that fails changes nothing and writes no history. Time is always passed in, never read from a
+Every method on the aggregate checks the same things in the same order: first, for an applicant, that the application
+is theirs (a stranger gets the same refusal whatever the status, so the answer says nothing about the application);
+then that the workflow allows the step; then that the person's role may take it; then the rules specific to the step.
+Withdrawing an application or issuing its permit also cancels any inspection still scheduled, so no open inspection
+outlives the decision. A step that fails changes nothing and writes no history. Time is always passed in, never read from a
 clock, so any rule can be tested at any moment.
 
 ## What a failure looks like
@@ -186,7 +188,8 @@ stateDiagram-v2
 | Project | Kind | What it proves |
 |---|---|---|
 | `Domain.Tests` | Unit | The rules, the value objects, and the workflow table against an independent specification; the diagrams in these documents |
-| `Application.Tests` | Unit | The dispatcher |
-| `Infrastructure.Tests` | Real databases | Migrations on SQLite and SQL Server LocalDB, that the model and migrations agree, seeding, constraints, concurrency |
-| `Api.IntegrationTests` | The real API in memory | Sign-in, every endpoint, authorization, error documents, rate limits, OpenAPI |
-| `Web.A11yTests` | A real browser on the real site | Whole journeys, keyboard use, reflow, and the axe-core sweep; see [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md) |
+| `Application.Tests` | Unit | The dispatcher, including a handler that throws before it returns and a request that is two kinds of request |
+| `Infrastructure.Tests` | Real databases | Migrations on SQLite and on SQL Server (a container in CI, LocalDB on Windows), that the model and migrations agree, seeding, constraints, concurrency |
+| `Api.IntegrationTests` | The real API in memory | Sign-in, every endpoint, authorization (including the exact list of public operations), error documents and their status mapping, rate limits, caching and security headers, refusal logging, token expiry, OpenAPI |
+| `Web.IntegrationTests` | The real site in memory | Session and anti-forgery cookies, sign-in and lockout, the same answer for a wrong password and an unknown address, return-address handling, caching and `Clear-Site-Data`, 403 and 404 behaviour, the content security policy |
+| `Web.A11yTests` | A real browser on the real site | Whole journeys, keyboard use, reflow, and the axe-core sweep; the headers real Kestrel sends; see [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md) |

@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<IdentityBootstrapper>();
         services.AddScoped<RegistrationService>();
+        services.AddScoped<AbsentAccountTiming>();
 
         services
             .AddHealthChecks()
