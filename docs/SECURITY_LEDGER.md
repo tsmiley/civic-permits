@@ -3,9 +3,10 @@
 Findings from reviews and incidents, one row each, with an owner and a date. Nothing Critical or High ships open.
 Newest last. This file holds no secret and no personal data.
 
-The last whole-repository security review was made by the review session on 2026-10-30 against `main` at f34d4bc, using
-the rulebook's procedure: 0 Critical, 0 High, 4 Medium and 9 Low findings, recorded as rows 3 to 15. A review is due
-again within 30 days, that is by 2026-11-29.
+A whole-repository security review is **in progress**: started 2026-10-30 by the review session against `main` at f34d4bc,
+using the rulebook's procedure, with 0 Critical, 0 High, 4 Medium and 9 Low findings, recorded as rows 3 to 15. It
+completes when the last open Medium closes; the completion date and the next-due date (30 days after it) are written
+here then. Until then the repository has no completed review on record.
 
 | # | Date | Kind | Finding | Severity | Owner | Status | Prevention |
 |---|---|---|---|---|---|---|---|
