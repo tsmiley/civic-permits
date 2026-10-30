@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: Submit (Applicant)
+    CorrectionsRequested --> Submitted: Submit (Applicant)
+    Submitted --> InReview: StartReview (Clerk or Administrator)
+    InReview --> CorrectionsRequested: RequestCorrections (Clerk or Administrator)
+    InReview --> Approved: Approve (Clerk or Administrator)
+    InReview --> Denied: Deny (Clerk or Administrator)
+    Approved --> Issued: Issue (Clerk or Administrator)
+    Draft --> Withdrawn: Withdraw (Applicant)
+    Submitted --> Withdrawn: Withdraw (Applicant)
+    InReview --> Withdrawn: Withdraw (Applicant)
+    CorrectionsRequested --> Withdrawn: Withdraw (Applicant)
+    Approved --> Withdrawn: Withdraw (Applicant)
+    Denied --> [*]
+    Withdrawn --> [*]
+    Issued --> [*]

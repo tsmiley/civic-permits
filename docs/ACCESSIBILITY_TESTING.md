@@ -21,7 +21,7 @@ the tests skip with a message that says so; they never pass silently.
 
 | Test class | What it checks |
 |---|---|
-| `AxeSweepTests` | The axe-core engine (unmodified, through Deque.AxeCore.Playwright) over every page of the site in every state a person can reach, as every kind of person who can reach it: 53 states at WCAG 2.0 and 2.1 A and AA plus axe's best-practice rules. A canary test puts known defects into a real page and requires axe to find each one, so a clean result means something. |
+| `AxeSweepTests` | The axe-core engine (unmodified, through Deque.AxeCore.Playwright) over the 53 page states listed in the report (the pages of the site in the states the tests reach, as each kind of person who can reach them), at WCAG 2.0 and 2.1 A and AA plus axe's best-practice rules. A state that is not on the list has not been scanned. A canary test puts known defects into a real page and requires axe to find each one, so a clean result means something. |
 | `SiteJourneyTests` | Whole journeys done the way a person does them, by label and role: applicant, clerk, inspector and administrator paths; page structure (language, a title of its own, one `h1`, landmarks, a name for every control, unique ids, no skipped heading level); error summary focus and field links; keyboard-only sign-in and tab order; sign-in return addresses; 404 and 403 pages; reflow at 320 px and at 200% text; 44 px targets; no console error or failed request. |
 | `DisplayAdaptationTests` | What axe cannot judge: a visible focus indicator on every keyboard stop (with a canary that removes the indicator and must be noticed), controls keeping a boundary when the system forces its own colours, and text still fitting when its spacing is overridden to the WCAG 1.4.12 values. |
 | `HomePageStructureTests` | The first checks written: structure, skip link behaviour, policy compliance, a real 404. |
@@ -43,6 +43,9 @@ Do the four journeys in the README's "The web site" table with the keyboard alon
 - The skip link is the first stop, and after it Tab continues from the main content.
 
 ### 2.2 Screen reader
+A short version that one person can do in twenty minutes with Windows Narrator, with a table to fill in and date, is in
+[MANUAL_CHECK_NARRATOR.md](MANUAL_CHECK_NARRATOR.md). Start there; the list below is the fuller version.
+
 Windows: NVDA with Firefox and with Chrome (and JAWS if available). macOS and iOS: VoiceOver with Safari. Android:
 TalkBack with Chrome. For each of the pages below, with the screen reader's speech on:
 - The page title and the main heading are announced on arrival, and say where you are.

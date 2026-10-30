@@ -40,6 +40,10 @@ internal sealed partial class SitePage : IAsyncDisposable
             BaseURL = site.BaseAddress.ToString(),
             ForcedColors = forcedColors ? ForcedColors.Active : ForcedColors.None,
         });
+        // Generous waits: on a busy machine (another build or test run) a page can take far longer than usual, and a
+        // test should fail because the page is wrong, not because the computer was.
+        context.SetDefaultTimeout(90_000);
+        context.SetDefaultNavigationTimeout(90_000);
         IPage page = await context.NewPageAsync();
         SitePage session = new(site, context, page);
 
@@ -61,7 +65,17 @@ internal sealed partial class SitePage : IAsyncDisposable
             }
         };
         page.PageError += (_, error) => session.Problems.Add($"page error: {error}");
-        page.RequestFailed += (_, request) => session.Problems.Add($"request failed: {request.Url} {request.Failure}");
+        page.RequestFailed += (_, request) =>
+        {
+            // A page or a data request the browser itself cancels because the person moved on (a click on a link while
+            // the last page was still loading) is not a fault in the site. A script, style or image that fails is.
+            bool cancelledNavigation = request.Failure == "net::ERR_ABORTED" && request.ResourceType is "document" or "fetch" or "xhr";
+
+            if (!cancelledNavigation)
+            {
+                session.Problems.Add($"request failed: {request.Url} {request.Failure}");
+            }
+        };
 
         return session;
     }

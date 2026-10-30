@@ -25,11 +25,13 @@ $allowed = @('MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD')
 #
 # Both are Microsoft redistributable runtime components that arrive through Microsoft.Data.SqlClient, which the
 # SQL Server provider requires. The repository does not contain them: NuGet restores them from nuget.org, and
-# they are covered by Microsoft's own license terms (documented in NOTICE). Raised for a ruling on 2026-10-30.
+# they are covered by Microsoft's own license terms (documented in NOTICE). Accepted 2026-10-30 by Fable-Extra
+# (redistributable runtime components of a required provider, not stored in the repository).
 #
 # Deque.AxeCore.Commons carries the axe-core accessibility engine, which is MPL-2.0 (a file-level, weak copyleft
-# license). It is used unmodified, for tests only, and is never part of the built application. Allowed on
-# 2026-10-30 on those conditions: its files are never edited, and NOTICE names it as MPL-2.0 (never MIT).
+# license). It is used unmodified, for tests only, and is never part of the built application. Allowed 2026-10-30 by
+# Fable-Extra (test-only dependency, MPL-2.0 file-level copyleft does not reach our code), on these conditions: its
+# files are never edited, and NOTICE names it as MPL-2.0 (never MIT).
 $reviewed = @{
     'Microsoft.Data.SqlClient.SNI.runtime'  = 'Microsoft Software License Terms (proprietary redistributable, native SQL networking library)'
     'Microsoft.Identity.Client.NativeInterop' = 'Microsoft Software License Terms (proprietary redistributable, native authentication interop)'

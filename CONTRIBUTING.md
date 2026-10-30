@@ -11,9 +11,12 @@ format and inspection results.
 
 ## Before pushing
 
+Continuous integration runs the same checks on every pull request and every push to `main` (and CodeQL runs
+beside it), but run them first.
+
 ```bash
 dotnet build                          # warnings are errors
-dotnet test                           # run each test project; all must pass
+dotnet test tests/CivicPermits.Domain.Tests   # run each test project in turn (see the README); all must pass
 dotnet format --verify-no-changes     # formatting and style
 pwsh scripts/inspect.ps1              # JetBrains InspectCode: no warnings in the code
 pwsh scripts/license-audit.ps1        # every package is MIT, Apache-2.0 or BSD (or a reviewed exception)
@@ -32,6 +35,13 @@ pwsh scripts/license-audit.ps1        # every package is MIT, Apache-2.0 or BSD 
   and passes the automated checks.
 - **Claims are tested.** The documentation says "tested against WCAG 2.1 AA", never "compliant" or "certified",
   unless a formal audit supports it.
+
+## Documentation is checked too
+
+The workflow diagram in `docs/ARCHITECTURE.md` is drawn from the code by a test; if you change the workflow table,
+regenerate it with `CP_UPDATE_DOCS=1 dotnet test tests/CivicPermits.Domain.Tests --filter DocumentationTests`. The
+screenshots are regenerated, never edited: `CP_SCREENSHOTS=1 dotnet test tests/CivicPermits.Web.A11yTests --filter ScreenshotTests`.
+A decision that shaped the design gets a short record in `docs/adr/`.
 
 ## Commit messages
 

@@ -7,7 +7,7 @@ namespace CivicPermits.Application.Messaging;
 /// request type and cached, so the reflection cost is paid on first use only.
 /// </summary>
 /// <remarks>
-/// This replaces a third-party mediator library on purpose (see docs/DECISIONS): the whole mechanism
+/// This replaces a third-party mediator library on purpose (see docs/adr/0002): the whole mechanism
 /// is about forty lines, it has no licence or upgrade risk, and a reviewer can read all of it.
 /// </remarks>
 internal sealed class Dispatcher(IServiceProvider services) : IDispatcher
