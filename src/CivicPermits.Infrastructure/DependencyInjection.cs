@@ -68,7 +68,7 @@ public static class DependencyInjection
             .AddSignInManager()
             .AddEntityFrameworkStores<CivicPermitsDbContext>();
 
-        // The rulebook asks for at least 220,000 PBKDF2 iterations; Identity's default is 100,000. Hashes made with fewer are
+        // The security baseline (docs/THREAT_MODEL.md) asks for at least 220,000 PBKDF2 iterations; Identity's default is 100,000. Hashes made with fewer are
         // upgraded the next time their owner signs in.
         services.Configure<PasswordHasherOptions>(hasher => hasher.IterationCount = PasswordPolicy.IterationCount);
 

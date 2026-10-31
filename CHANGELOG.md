@@ -3,6 +3,9 @@
 All notable changes are recorded here, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+Entries named S0 to S6 are the seven slices, each one pull request, that built the project in order; later entries are fixes and
+follow-ups from reviews.
+
 ## [Unreleased]
 
 ### Security

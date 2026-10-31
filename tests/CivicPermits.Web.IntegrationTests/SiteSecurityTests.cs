@@ -271,7 +271,7 @@ public class SiteSecurityTests
 
     // ---- Headers and caching ----
 
-    private static readonly string[] RulebookHeaders =
+    private static readonly string[] SecurityHeaders =
     [
         "Content-Security-Policy", "X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy", "Permissions-Policy",
         "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy", "X-Permitted-Cross-Domain-Policies", "X-Correlation-Id",
@@ -279,7 +279,7 @@ public class SiteSecurityTests
 
     private static void AssertHeaders(HttpResponseMessage response, string where)
     {
-        foreach (string header in RulebookHeaders)
+        foreach (string header in SecurityHeaders)
         {
             Assert.True(response.Headers.Contains(header), $"{where}: the {header} header is missing.");
         }
@@ -302,7 +302,7 @@ public class SiteSecurityTests
     }
 
     [Fact]
-    public async Task Every_rulebook_header_is_on_a_page_a_redirect_a_refusal_a_miss_and_a_static_file()
+    public async Task Every_security_header_is_on_a_page_a_redirect_a_refusal_a_miss_and_a_static_file()
     {
         using WebFactory factory = new WebFactory().WithSampleData();
         using HttpClient anonymous = factory.Client();
