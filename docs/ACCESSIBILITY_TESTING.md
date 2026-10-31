@@ -19,6 +19,13 @@ dotnet test tests/CivicPermits.Web.A11yTests
 Set `CP_BROWSER_CHANNEL` to use another Playwright channel (for example `msedge` or `chrome-beta`). With no browser
 the tests skip with a message that says so; they never pass silently.
 
+**One browser per run, with a profile that persists.** Every test class shares one site and one browser, started once and closed cleanly
+at the end (Playwright's own close, never a process kill), using one profile folder: `CP_BROWSER_PROFILE_DIR`, or `civic-permits/a11y-profile`
+under the local application data folder, created if missing and never deleted by the tests. The reason is a Windows one: at start-up Chrome
+checks whether the account's password is blank, and Windows counts each check as a failed sign-in, so a fresh profile for every launch (or a
+browser for every test class) locks the account out after ten. Chrome keeps the answer in the profile, but writes it only on a clean
+shutdown. Only one run at a time may use a profile folder. The browser listens for debugging on a free port of the loopback address while the run lasts, so each test still gets a context of its own (its own cookies and settings), as before.
+
 | Test class | What it checks |
 |---|---|
 | `AxeSweepTests` | The axe-core engine (unmodified, through Deque.AxeCore.Playwright) over the 57 page states listed in the report (the pages of the site in the states the tests reach, as each kind of person who can reach them), at WCAG 2.0 and 2.1 A and AA plus axe's best-practice rules. A state that is not on the list has not been scanned. A canary test puts known defects into a real page and requires axe to find each one, so a clean result means something. |

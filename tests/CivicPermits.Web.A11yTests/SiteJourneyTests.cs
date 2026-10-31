@@ -9,7 +9,8 @@ namespace CivicPermits.Web.A11yTests;
 /// keyboard. Each page also gets the structural checks every page must pass. The axe-core sweep over every state
 /// arrives with the accessibility slice; these hand-written assertions stay beside it.
 /// </summary>
-public class SiteJourneyTests(SiteFixture site) : IClassFixture<SiteFixture>
+[Collection(SiteBrowserGroup.Name)]
+public class SiteJourneyTests(SiteFixture site)
 {
     private static Regex Label(string start) => new("^" + Regex.Escape(start), RegexOptions.None, TimeSpan.FromSeconds(1));
 

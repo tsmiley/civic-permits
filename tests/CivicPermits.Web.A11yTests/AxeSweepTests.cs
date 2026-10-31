@@ -10,7 +10,8 @@ namespace CivicPermits.Web.A11yTests;
 /// Passing means axe found nothing it can find. It does not mean the site is accessible: automated rules reach a
 /// minority of the success criteria. See docs/ACCESSIBILITY_REPORT.md for what else was done and what remains.
 /// </remarks>
-public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
+[Collection(SiteBrowserGroup.Name)]
+public class AxeSweepTests(SiteFixture site)
 {
     private static async Task SubmitAsync(IPage page, string buttonName) =>
         await page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = buttonName }).ClickAsync();
