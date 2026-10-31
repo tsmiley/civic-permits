@@ -3,7 +3,7 @@ using Microsoft.Playwright;
 namespace CivicPermits.Web.A11yTests;
 
 /// <summary>
-/// The axe-core sweep: the 54 page states listed in docs/ACCESSIBILITY_REPORT.md (the pages of the site in the states
+/// The axe-core sweep: the 57 page states listed in docs/ACCESSIBILITY_REPORT.md (the pages of the site in the states
 /// and as the kinds of person named there). A test collects the violations from all its states and reports them together.
 /// </summary>
 /// <remarks>
@@ -80,6 +80,7 @@ public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
                      ("register", "/account/register"),
                      ("page not found", "/no-such-page"),
                      ("status 429 page", "/status/429"),
+                     ("account closed", "/account/closed"),
                  })
         {
             await visitor.GoAsync(path);
@@ -111,7 +112,7 @@ public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
         await visitor.Page.Locator("[data-error-summary]").WaitForAsync();
         await sweep.ScanAsync(visitor.Page, "register, weak password");
 
-        Assert.Equal(13, sweep.StatesScanned);
+        Assert.Equal(14, sweep.StatesScanned);
         sweep.AssertClean();
         Assert.Empty(visitor.Problems);
     }
@@ -177,7 +178,15 @@ public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
         await third.GoAsync("/admin/permit-types");
         await sweep.ScanAsync(third.Page, "applicant: not allowed (403)");
 
-        Assert.Equal(17, sweep.StatesScanned);
+        // Closing an account is asked for and refused (wrong password) but never carried out, which would end the sample sign-in.
+        await third.GoAsync("/account/close");
+        await sweep.ScanAsync(third.Page, "applicant: close my account");
+        await third.Page.GetByLabel("Your password, to confirm").FillAsync("wrong-password-1A");
+        await SubmitAsync(third.Page, "Close my account");
+        await third.Page.Locator("[data-error-summary]").WaitForAsync();
+        await sweep.ScanAsync(third.Page, "applicant: close my account, wrong password");
+
+        Assert.Equal(19, sweep.StatesScanned);
         sweep.AssertClean();
         Assert.Empty(applicant.Problems);
         Assert.Empty(second.Problems);

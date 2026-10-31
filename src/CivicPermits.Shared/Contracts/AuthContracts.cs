@@ -27,3 +27,7 @@ public sealed record TokenResponse(string TokenType, string AccessToken, int Exp
 /// <param name="DisplayName">The name shown on correspondence.</param>
 /// <param name="Role">The role they act in.</param>
 public sealed record CurrentUserResponse(Guid Id, string DisplayName, string Role);
+
+/// <summary>Closes the signed-in applicant's account. The password is asked again so a borrowed session cannot do it.</summary>
+/// <param name="Password">The account's password.</param>
+public sealed record CloseAccountRequest(string? Password);

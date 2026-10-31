@@ -21,7 +21,7 @@ public sealed record RegistrationOutcome(IReadOnlyDictionary<string, string[]> E
 /// account. There is no email confirmation in this demonstration; a production service would send one and
 /// would be the place to tell the owner of a taken address.
 /// </remarks>
-public sealed class RegistrationService(UserManager<ApplicationUser> users)
+public sealed class RegistrationService(UserManager<ApplicationUser> users, TimeProvider time)
 {
     /// <summary>Validates the details and creates an applicant account.</summary>
     public async Task<RegistrationOutcome> RegisterApplicantAsync(string? email, string? password, string? displayName)
@@ -51,7 +51,7 @@ public sealed class RegistrationService(UserManager<ApplicationUser> users)
             return new RegistrationOutcome(errors);
         }
 
-        ApplicationUser person = new() { Id = Guid.CreateVersion7(), UserName = address, Email = address, DisplayName = name };
+        ApplicationUser person = new() { Id = Guid.CreateVersion7(), UserName = address, Email = address, DisplayName = name, CreatedOn = time.GetUtcNow() };
         IdentityResult created = await users.CreateAsync(person, password!);
 
         if (!created.Succeeded)

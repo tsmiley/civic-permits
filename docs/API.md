@@ -37,6 +37,7 @@ curl http://localhost:5210/api/v1/applications?status=Approved \
 | `POST /auth/register` | Makes an applicant account. Answers 202 whether or not the address was already registered ([ADR 0011](adr/0011-registration-cannot-reveal-who-has-an-account.md)). |
 | `POST /auth/login` | Returns `{ tokenType, accessToken, expiresIn, refreshToken }`. Five wrong passwords lock the account for fifteen minutes. |
 | `POST /auth/refresh` | Exchanges a refresh token for a new pair; refused if the person's security stamp has changed. |
+| `POST /auth/close-account` | Applicants only; body `{ "password": "..." }`. Removes the account's name and email, ends its sessions and refresh tokens and locks it for good; its applications are kept under the retention periods (answers 204; a wrong password is a 422 and counts toward the lockout). |
 | `POST /auth/sign-out` | Needs a sign-in. Changes the account's security stamp, so no refresh token made before the call can be exchanged again (answers 204). An access token already issued keeps working until its 15 minutes are up. |
 | `GET /auth/me` | Says who the access token belongs to and the role they act in. |
 
@@ -81,6 +82,7 @@ request's correlation id (also in the `X-Correlation-Id` header):
 |---|---|---|
 | Permit types | `GET /permit-types`, `GET /permit-types/{id}` | anyone |
 | | `POST /permit-types`, `PUT /permit-types/{id}`, `POST /permit-types/{id}/open`, `/close` | administrators; each writes one entry to the audit record |
+| Retention | `POST /retention/purge` (`?dryRun=true` to count only) | administrators; a real run writes one audit entry with the counts |
 | Audit | `GET /audit` | administrators; read only: nothing in the API adds to, changes or removes an entry |
 | Applications | `POST /applications`, `PUT /applications/{id}`, `POST .../submit`, `.../withdraw` | the applicant who owns it |
 | | `POST .../start-review`, `.../request-corrections`, `.../approve`, `.../deny`, `.../issue`, `.../payment`, `.../inspections` | clerks and administrators |

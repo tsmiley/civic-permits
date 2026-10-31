@@ -57,6 +57,18 @@ internal static class AuthEndpoints
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        auth.MapPost("/close-account", CloseAccountAsync)
+            .RequireAuthorization(Policies.Applicant)
+            .RequireRateLimiting(RateLimits.Auth)
+            .WithName("CloseAccount")
+            .WithSummary("Closes the signed-in applicant's own account.")
+            .WithDescription("Needs the password again. Removes the account's name and email address, ends its sessions and refresh tokens, and means it can never sign in again; its applications are kept under the retention periods. An access token already issued lasts until its 15 minutes are up.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         auth.MapGet("/me", MeAsync)
             .RequireAuthorization(Policies.SignedIn)
             .WithName("GetCurrentUser")
@@ -81,6 +93,7 @@ internal static class AuthEndpoints
         SignInManager<ApplicationUser> signIn,
         UserManager<ApplicationUser> users,
         AbsentAccountTiming timing,
+        SignInActivity activity,
         HttpContext http)
     {
         if (string.IsNullOrWhiteSpace(request?.Email) || string.IsNullOrEmpty(request.Password))
@@ -111,6 +124,9 @@ internal static class AuthEndpoints
             return Rejected();
         }
 
+        // Where the retention period for an unused account is counted from.
+        await activity.RecordAsync(person);
+
         return TypedResults.Empty;
     }
 
@@ -135,6 +151,16 @@ internal static class AuthEndpoints
         }
 
         return TypedResults.SignIn(await signIn.CreateUserPrincipalAsync(person), authenticationScheme: IdentityConstants.BearerScheme);
+    }
+
+    private static async Task<IResult> CloseAccountAsync(CloseAccountRequest? request, ICurrentUser user, AccountClosing closing)
+    {
+        Actor actor = user.Actor ?? throw new RequestException(RequestFailure.Unauthorized, "request.unauthorized", "Sign in to do this.");
+        ClosingOutcome outcome = await closing.CloseApplicantAsync(actor.Id, request?.Password);
+
+        return outcome.Closed
+            ? TypedResults.NoContent()
+            : ValidationFailed(new Dictionary<string, string[]> { ["password"] = [outcome.Problem ?? "The password is not right."] });
     }
 
     private static async Task<IResult> SignOutAsync(ICurrentUser user, UserManager<ApplicationUser> users)

@@ -63,6 +63,11 @@ else if (_page is not null)
     <Pager Page="@_page.Page" PageSize="@_page.PageSize" Total="@_page.TotalCount" LinkFor="@LinkFor" />
 }
 
+@if (InRole("Applicant"))
+{
+    <p><a href="/account/close">Close my account</a></p>
+}
+
 @code {
     private static readonly string[] StatusNames = ["Draft", "Submitted", "InReview", "CorrectionsRequested", "Approved", "Denied", "Withdrawn", "Issued"];
 

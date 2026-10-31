@@ -6,6 +6,13 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Security
+- Fixes from the whole-repository security review, part 4 (ledger row 14): written retention periods (decided applications
+  7 years after their last change, drafts and withdrawn applications 1 year, applicant accounts with no application 2 years
+  after their last sign-in) in `RetentionPolicy`, SECURITY.md and DEPLOYMENT.md; an administrator-run purge,
+  `POST /api/v1/retention/purge` (with `dryRun`), that removes what is past its period in one transaction and writes an audit
+  entry with the counts; an applicant can close their own account (`/account/close`, `POST /api/v1/auth/close-account`),
+  which removes their name and email, ends their sessions and keeps their applications. Accounts now record when they were
+  made and last signed in (migration `AccountDates`). The audit sweep covers the two new pages (57 states).
 - WR-14 (ledger row 16): the password blocklist also refuses a path across neighbouring keys, such as 1q2w3e4r5t6y7u8i
   or zaq12wsxcde34rfv, in either direction; a breached-password service is recorded as the deployment's choice.
 - Fixes from the whole-repository security review, part 3 (ledger row 13): an audit record for permit-type administration.

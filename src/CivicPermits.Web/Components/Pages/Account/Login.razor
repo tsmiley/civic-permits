@@ -4,6 +4,7 @@
 @inject Microsoft.AspNetCore.Identity.SignInManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> SignIn
 @inject Microsoft.AspNetCore.Identity.UserManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> Users
 @inject CivicPermits.Infrastructure.Identity.AbsentAccountTiming Timing
+@inject CivicPermits.Infrastructure.Identity.SignInActivity Activity
 
 <PageTitle>@(HasProblems ? "Error: " : "")Sign in - Civic Permits</PageTitle>
 
@@ -89,6 +90,9 @@
 
             return;
         }
+
+        // Where the retention period for an unused account is counted from.
+        await Activity.RecordAsync(person!);
 
         Navigation.NavigateTo(Display.LocalPath(Posted("returnUrl")) ?? "/applications");
     }

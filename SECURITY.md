@@ -8,6 +8,15 @@ If you find a security problem in the code, please report it privately through G
 button on the Security tab of this repository (private vulnerability reporting), rather than opening a public
 issue. Expect an acknowledgement within a few days. There is no bug bounty.
 
+## How long personal data is kept
+
+Decided applications (approved, denied or issued) are kept **7 years after their last change**; drafts and withdrawn
+applications **1 year** after theirs; an applicant's account with no application **2 years after the last time it was
+used** (its last sign-in, or its creation if it never signed in). An application still in progress is never removed by age.
+An applicant can **close their own account** at any time: their name and email address are removed, it can never sign in
+again, and their applications are kept under the periods above. Details and how a purge is run are in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#backups-data-and-retention).
+
 ## What the project does about security
 
 The design is written down in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md): what is protected, who might attack it,

@@ -83,6 +83,9 @@ public static class DependencyInjection
         services.AddScoped<IdentityBootstrapper>();
         services.AddScoped<RegistrationService>();
         services.AddScoped<AbsentAccountTiming>();
+        services.AddScoped<SignInActivity>();
+        services.AddScoped<AccountClosing>();
+        services.AddScoped<IRetentionService, RetentionService>();
 
         services
             .AddHealthChecks()
