@@ -27,6 +27,9 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
+        with:
+          # The publication sweep reads every commit, so the whole history is needed.
+          fetch-depth: 0
 
       - name: Set up .NET (version from global.json)
         uses: actions/setup-dotnet@v6
@@ -86,3 +89,12 @@ jobs:
       - name: Audit package licenses
         shell: pwsh
         run: ./scripts/license-audit.ps1
+
+      # Secrets, personal details, forbidden files and commit authors, over the whole history. The list of private names is
+      # kept outside the repository, so that one check is skipped here (and the sweep says so); it is run by hand before
+      # a release. The self-test proves the sweep can find things.
+      - name: Publication sweep
+        shell: pwsh
+        run: |
+          ./tools/publication-sweep.ps1 -SelfTest
+          ./tools/publication-sweep.ps1

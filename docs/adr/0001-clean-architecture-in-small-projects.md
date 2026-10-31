@@ -15,8 +15,7 @@ two hosts (`Api`, `Web`) are thin and ask the application layer. Each provider's
 own. The project boundaries are enforced by the compiler: a project that does not reference EF Core cannot use it.
 
 ## Consequences
-- The rules can be unit-tested with no server, database or framework, and they run in milliseconds (578 tests in under
-  half a second).
+- The rules can be unit-tested with no server, database or framework, and they run in milliseconds (over 600 tests in about a second).
 - The web site and the API share every rule by construction, because neither contains any.
 - More projects, and a little ceremony: a store contract in `Application` and its implementation in `Infrastructure`
   for each thing the rules need.
