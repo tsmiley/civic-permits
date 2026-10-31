@@ -42,7 +42,7 @@ curl http://localhost:5210/api/v1/applications?status=Approved \
 
 **Passwords** follow NIST SP 800-63B-4: at least 15 characters, any characters (spaces included) up to 256, no rule about
 capitals, digits or symbols, and a refusal for a password on the bundled list of the ones people guess first or made only
-of them (a 422 whose message says so). The list ships inside the program and no password leaves the host. A password hash
+of them, including a path across neighbouring keys (a 422 whose message says so). The list ships inside the program and no password leaves the host. A password hash
 uses 250,000 PBKDF2-HMAC-SHA512 iterations.
 
 Access tokens last 15 minutes and refresh tokens 8 hours. They are opaque and protected with the host's data-protection

@@ -138,6 +138,14 @@ public class PasswordPolicyTests
     [InlineData("9876543210987654")] // counting down
     [InlineData("abcdefghijklmnopq")]
     [InlineData("CivicPermits2026!!")] // this application's own name
+    [InlineData("1q2w3e4r5t6y7u8i")] // a walk down the keyboard, a digit then the letter below it (a famous breached password)
+    [InlineData("zaq12wsxcde34rfv")] // a walk up the diagonals
+    [InlineData("i8u7y6t5r4e3w2q1")] // the same shapes backwards
+    [InlineData("vfr43edcxsw21qaz")]
+    [InlineData("1q2w3e4r5t6y7u8i9o0p")]
+    [InlineData("qazxswedcvfrtgbn")]
+    [InlineData("1Q2W3E4R5T6Y7U8I")] // other capitals
+    [InlineData("1q2w3e4r")] // eight keys is a walk by itself
     public void A_password_on_the_list_or_made_only_of_it_is_guessable(string password) =>
         Assert.True(CommonPasswordValidator.IsGuessable(password), $"'{password}' should have been refused.");
 
@@ -147,6 +155,9 @@ public class PasswordPolicyTests
     [InlineData("the rain in spain falls mainly on the plain")]
     [InlineData("dragonmonkeyfootballshadow")] // four stems: a passphrase of words is allowed to be common words
     [InlineData("purple tractor sings opera at midnight")]
+    [InlineData("q1w2e3")] // too short to count as a walk
+    [InlineData("1q2w3e4r then a long sentence about gardens and weather")] // a walk is a small part of it
+    [InlineData("a1b2c3d4e5f6g7h8i9")] // letters and digits in order but not neighbouring keys
     public void A_password_that_is_not_made_only_of_the_list_is_not_guessable(string password) =>
         Assert.False(CommonPasswordValidator.IsGuessable(password), $"'{password}' should not have been refused.");
 

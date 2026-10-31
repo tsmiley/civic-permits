@@ -108,6 +108,8 @@ This list is the point of this page.
 - **No payment.** The fee is recorded as paid by a clerk at the counter. No card input exists, by design.
 - **One database, one writer pattern.** The design is correct for several instances (concurrency on applications and
   permit numbers is guarded in the database; permit-type edits are last-write-wins), but it has only been run as one.
+- **No breached-password check.** The password blocklist is bundled and small. A deployment that wants more should add a
+  breached-password service as a second password validator; that is a network call and a choice for the deployment.
 - **No multi-factor sign-in, and an audit record that is not tamper-proof.** Each application has its own history and
   permit-type changes have the audit record (`/admin/audit`), but the program only adds to it: someone with write access to
   the database could edit it. Sign-ins are not recorded. Making the record append-only at the database level, or shipping it

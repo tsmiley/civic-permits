@@ -65,6 +65,7 @@ public sealed class CommonPasswordValidator : IPasswordValidator<ApplicationUser
         string swapped = Simplify(password, swapLookalikes: true);
 
         return IsRun(plain)
+            || IsKeyboardWalk(plain)
             || IsMadeOfStems(plain, swapped)
             || ContainsAccountName(plain, owner)
             || ContainsAccountName(swapped, owner);
@@ -145,6 +146,60 @@ public sealed class CommonPasswordValidator : IPasswordValidator<ApplicationUser
         }
 
         return 0;
+    }
+
+    // Where each key sits on a US keyboard, in key widths: the number row, then the three letter rows, each shifted right
+    // by the width of the key at its left edge (Tab, Caps Lock, Shift), so q sits between 1 and 2 and a between q and w.
+    private static readonly Dictionary<char, (double X, double Y)> Keys = BuildKeys();
+
+    private const int ShortestWalk = 8;
+    private const double LongestStep = 1.45;
+    private const double WalkShare = 0.75;
+
+    private static Dictionary<char, (double X, double Y)> BuildKeys()
+    {
+        Dictionary<char, (double X, double Y)> keys = [];
+        (string Row, double Left)[] rows = [("1234567890", 1.5), ("qwertyuiop", 2.0), ("asdfghjkl", 2.25), ("zxcvbnm", 2.75)];
+
+        for (int y = 0; y < rows.Length; y++)
+        {
+            for (int i = 0; i < rows[y].Row.Length; i++)
+            {
+                keys[rows[y].Row[i]] = (rows[y].Left + i, y);
+            }
+        }
+
+        return keys;
+    }
+
+    /// <summary>
+    /// A path across neighbouring keys, in any direction: along a row (qwerty), down a column (1q2w3e4r), up a diagonal
+    /// (zaq12wsx). Famous breached passwords are mostly such shapes. It is refused when at least eight characters in a row
+    /// are on neighbouring keys and they make up three quarters of the password's letters and digits.
+    /// </summary>
+    private static bool IsKeyboardWalk(string text)
+    {
+        char[] mapped = [.. text.Where(Keys.ContainsKey)];
+
+        if (mapped.Length < ShortestWalk)
+        {
+            return false;
+        }
+
+        int longest = 1;
+        int run = 1;
+
+        for (int i = 1; i < mapped.Length; i++)
+        {
+            (double x, double y) from = Keys[mapped[i - 1]];
+            (double x, double y) to = Keys[mapped[i]];
+            double distance = Math.Sqrt(Math.Pow(to.x - from.x, 2) + Math.Pow(to.y - from.y, 2));
+
+            run = distance <= LongestStep ? run + 1 : 1;
+            longest = Math.Max(longest, run);
+        }
+
+        return longest >= ShortestWalk && longest >= mapped.Length * WalkShare;
     }
 
     /// <summary>
