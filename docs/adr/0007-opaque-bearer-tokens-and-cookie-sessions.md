@@ -12,8 +12,9 @@ signing key, and a key in configuration is a secret that must be stored, rotated
   changed password ends old sessions.
 - **Site:** the Identity application cookie: `HttpOnly`, `SameSite=Lax`, `Secure` outside development, 8 hours sliding,
   with an anti-forgery token (`SameSite=Strict` cookie) on every post, sign-out included.
-- Password length over composition rules (twelve characters, no forced symbols); five failures lock the account for
-  fifteen minutes; a wrong password, an unknown address and a locked account give one identical answer.
+- Password length over composition rules (fifteen characters, no forced symbols, a bundled blocklist of the passwords
+  people guess first, as NIST SP 800-63B-4 asks); five failures lock the account for fifteen minutes; a wrong password, an
+  unknown address and a locked account give one identical answer (an unknown address costs the same password check).
 
 ## Consequences
 - No secret to manage for sign-in. The tokens are only as good as the host's data-protection keys; a deployment with

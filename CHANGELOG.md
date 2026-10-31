@@ -6,6 +6,13 @@ All notable changes are recorded here, newest first. The format follows
 ## [Unreleased]
 
 ### Security
+- S6: the publication sweep, `tools/publication-sweep.ps1`. It looks through every commit on every branch, every commit
+  message and every file for credential shapes, email addresses, telephone numbers, files that must never be committed and
+  private names (kept in a list outside the repository), and checks that every author and committer is a no-reply address.
+  It never prints what it matched. A self-test plants one of each defect, including a secret that was added and removed
+  again, and requires the sweep to find them and to find nothing in a clean repository. CI runs both. The first real run
+  found nothing in the history or the tree. Dependency audit: no vulnerable and no deprecated package in any of the 14
+  projects; no open code-scanning, secret-scanning or Dependabot alert.
 - Fixes from the whole-repository security review, part 4 (ledger row 14): written retention periods (decided applications
   7 years after their last change, drafts and withdrawn applications 1 year, applicant accounts with no application 2 years
   after their last sign-in) in `RetentionPolicy`, SECURITY.md and DEPLOYMENT.md; an administrator-run purge,

@@ -27,6 +27,22 @@ a server: set `CP_SQLSERVER_PASSWORD` (the `sa` password of a SQL Server you own
 into a file) and, if it is not on `localhost,1433`, `CP_SQLSERVER_HOST`. CI does exactly that with a container it starts
 for the run, and sets `CP_REQUIRE_SQLSERVER=true` so the test cannot be skipped there.
 
+## Publication checks
+
+Before a repository is made public, and at each release, run the publication sweep:
+
+```bash
+pwsh tools/publication-sweep.ps1 -SelfTest                                   # proves the sweep can find things
+pwsh tools/publication-sweep.ps1 -NamesFile path/to/private-names.txt        # the real sweep
+```
+
+It looks through every commit on every branch, every commit message and every file for the shapes of credentials, email
+addresses and telephone numbers, files that must never be committed (databases, certificates, key and environment files),
+private names and the identity of every author and committer (only no-reply addresses are allowed). It never prints what it
+matched, only the rule and the place. The list of private names is kept **outside** the repository, because publishing the
+list would publish the names; without it that one check is skipped and the sweep says so. CI runs the self-test and the
+rest of the sweep on every push.
+
 ## Rules
 
 - **Original work only.** Nothing is copied or adapted from any employer, client or other private project. Every

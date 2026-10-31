@@ -15,7 +15,7 @@ what remains. The procedure for the manual testing is in [ACCESSIBILITY_TESTING.
 **Site under test:** the Blazor web site in this repository, run with the fictional sample data, in Chrome (the
 installed stable channel on the development machine), with its real content security policy.
 
-**Automated, every change:** `dotnet test tests/CivicPermits.Web.A11yTests` (47 browser tests at the time of writing).
+**Automated, every change:** `dotnet test tests/CivicPermits.Web.A11yTests` (53 browser tests at the time of writing, one of which only makes the documentation's screenshots).
 
 | Group | States scanned with axe-core |
 |---|---|
