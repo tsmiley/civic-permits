@@ -6,7 +6,8 @@ namespace CivicPermits.Web.A11yTests;
 /// What the real server, Kestrel, sends over a real socket. The in-memory test server has no Kestrel in it, so the
 /// <c>Server</c> header could not be checked there at all.
 /// </summary>
-public class ServerHeaderTests(SiteFixture site) : IClassFixture<SiteFixture>
+[Collection(SiteBrowserGroup.Name)]
+public class ServerHeaderTests(SiteFixture site)
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(30) };
 

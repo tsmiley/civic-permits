@@ -7,7 +7,8 @@ namespace CivicPermits.Web.A11yTests;
 /// unless asked: <c>CP_SCREENSHOTS=1 dotnet test tests/CivicPermits.Web.A11yTests --filter ScreenshotTests</c>.
 /// Screenshots are regenerated, never edited, so the pictures cannot show something the site does not do.
 /// </summary>
-public class ScreenshotTests(SiteFixture site) : IClassFixture<SiteFixture>
+[Collection(SiteBrowserGroup.Name)]
+public class ScreenshotTests(SiteFixture site)
 {
     private static string ImagesFolder()
     {

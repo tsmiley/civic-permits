@@ -6,7 +6,8 @@ namespace CivicPermits.Web.A11yTests;
 /// Things axe cannot judge: that every keyboard stop shows where focus is, that controls stay visible when the
 /// person's system forces its own colours, and that text still fits when a person overrides its spacing.
 /// </summary>
-public class DisplayAdaptationTests(SiteFixture site) : IClassFixture<SiteFixture>
+[Collection(SiteBrowserGroup.Name)]
+public class DisplayAdaptationTests(SiteFixture site)
 {
     /// <summary>
     /// Tabs through a page and returns the stops that show no focus indicator: no outline at all, or one thinner than

@@ -6,7 +6,8 @@ namespace CivicPermits.Web.A11yTests;
 /// The first real browser checks: the structure every page must have. The axe-core sweep over every page and
 /// state arrives with the accessibility slice; these are the hand-written assertions that stay beside it.
 /// </summary>
-public class HomePageStructureTests(SiteFixture site) : IClassFixture<SiteFixture>
+[Collection(SiteBrowserGroup.Name)]
+public class HomePageStructureTests(SiteFixture site)
 {
     [Fact]
     public async Task The_home_page_has_a_language_a_title_one_h1_and_the_four_landmarks()
