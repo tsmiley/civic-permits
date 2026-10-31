@@ -88,6 +88,28 @@ public sealed class PermitApplication
     /// <summary>Every status change, oldest first.</summary>
     public IReadOnlyList<StatusChange> History => _history;
 
+    /// <summary>
+    /// The last moment anything was done to the application: the latest of its creation, its history, its dates and the
+    /// closing of its inspections. A booked inspection's future date is not a change. This is where the retention
+    /// period is counted from.
+    /// </summary>
+    public DateTimeOffset LastChangedOn()
+    {
+        DateTimeOffset latest = CreatedOn;
+
+        foreach (DateTimeOffset? moment in new[] { SubmittedOn, DecidedOn, FeePaidOn, IssuedOn }
+                     .Concat(_history.Select(change => (DateTimeOffset?)change.At))
+                     .Concat(_inspections.Select(inspection => inspection.ClosedOn)))
+        {
+            if (moment is { } value && value > latest)
+            {
+                latest = value;
+            }
+        }
+
+        return latest;
+    }
+
     /// <summary>Every inspection, in the order they were booked.</summary>
     public IReadOnlyList<Inspection> Inspections => _inspections;
 

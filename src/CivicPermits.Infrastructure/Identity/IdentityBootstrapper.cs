@@ -9,7 +9,7 @@ namespace CivicPermits.Infrastructure.Identity;
 /// Makes sure the four roles exist and, when asked, creates the sample sign-ins. The roles are the same four the
 /// domain uses, spelled the same way, so a role claim maps straight onto an <see cref="ActorRole"/>.
 /// </summary>
-public sealed class IdentityBootstrapper(UserManager<ApplicationUser> users, RoleManager<IdentityRole<Guid>> roles)
+public sealed class IdentityBootstrapper(UserManager<ApplicationUser> users, RoleManager<IdentityRole<Guid>> roles, TimeProvider time)
 {
     private static readonly (Guid Id, string Email, string Name, ActorRole Role)[] SampleUsers =
     [
@@ -61,6 +61,7 @@ public sealed class IdentityBootstrapper(UserManager<ApplicationUser> users, Rol
                 Email = email,
                 EmailConfirmed = true,
                 DisplayName = name,
+                CreatedOn = time.GetUtcNow(),
             };
 
             Require(await users.CreateAsync(person, password), $"create the sample user {role}");

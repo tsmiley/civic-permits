@@ -1,0 +1,62 @@
+@page "/account/close"
+@attribute [Authorize(Roles = "Applicant")]
+@attribute [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(CivicPermits.Infrastructure.Hosting.RateLimits.Auth)]
+@inherits CivicPage
+@inject CivicPermits.Infrastructure.Identity.AccountClosing Closing
+@inject Microsoft.AspNetCore.Identity.SignInManager<CivicPermits.Infrastructure.Persistence.ApplicationUser> SignIn
+
+<PageTitle>@(HasProblems ? "Error: " : "")Close my account - Civic Permits</PageTitle>
+
+<h1>Close my account</h1>
+
+<ErrorSummary Problems="@Problems" />
+
+<p>Closing your account removes your name and email address from it, signs you out everywhere, and means nobody can
+    sign in to it again. This cannot be undone.</p>
+<p>Your applications are kept, because they are the office's record: a decided application for seven years after its
+    last change, a draft or a withdrawn one for a year. They are no longer linked to a name or an email address anyone can
+    read, but they still hold the project description and the site address you gave.</p>
+
+<form method="post" @formname="close-account" @onsubmit="SubmitAsync" novalidate>
+    <AntiforgeryToken />
+    <TextField Id="password" Label="Your password, to confirm" Type="password" Required="true" AutoComplete="current-password"
+               Error="@ErrorFor("password")" />
+    <button type="submit" class="button">Close my account</button>
+</form>
+
+<p><a href="/applications">Keep my account</a></p>
+
+@code {
+    private async Task SubmitAsync()
+    {
+        if (UserId is not { } id)
+        {
+            return;
+        }
+
+        CivicPermits.Infrastructure.Identity.ClosingOutcome outcome = await Closing.CloseApplicantAsync(id, Posted("password"));
+
+        if (!outcome.Closed)
+        {
+            // For the refusal log: which account, by identifier.
+            if (Http is not null)
+            {
+                Http.Items[CivicPermits.Infrastructure.Hosting.RefusalLogMiddleware.CodeKey] = "account.close_refused";
+                Http.Items[CivicPermits.Infrastructure.Hosting.RefusalLogMiddleware.AccountKey] = id.ToString();
+            }
+
+            Problems.Add(new FormProblem("password", outcome.Problem ?? "The password is not right."));
+
+            return;
+        }
+
+        await SignIn.SignOutAsync();
+
+        if (Http is { Response.HasStarted: false })
+        {
+            Http.Response.Headers["Clear-Site-Data"] = "\"cache\", \"cookies\", \"storage\"";
+        }
+
+        Navigation.NavigateTo("/account/closed");
+    }
+}

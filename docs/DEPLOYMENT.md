@@ -94,10 +94,42 @@ request that was answered with a stable error code. It names the account's id (n
 pattern, the status and the code, and tests check that no email address, password or token appears in any event. A
 successful sign-in is not logged by the application.
 
-## Backups and data
+## Backups, data and retention
 
 The database holds the only record of applications, their history and inspections. A deployment needs its own backup
-and restore plan for it. Nothing in the application deletes an application.
+and restore plan for it. Nothing in the application deletes an application except the retention purge below.
+
+### How long data is kept
+
+| What | Kept | Counted from |
+|---|---|---|
+| A decided application (approved, denied, issued), with its history and inspections | 7 years | its last change |
+| A draft, or a withdrawn application | 1 year | its last change |
+| An application still in progress (submitted, in review, corrections requested) | not removed by age | |
+| An applicant account with no application | 2 years | its last sign-in, or its creation if it never signed in |
+| Staff accounts (clerk, inspector, administrator) | not removed by age; the owner manages them | |
+
+The last change of an application is the latest of its creation, its history entries, its dates and the closing of its
+inspections. The periods are one decision, written once in `RetentionPolicy`, and tested to the day: removed when the whole
+period has passed, never a day before. An account made before creation dates were recorded starts its two years at the first
+real purge run.
+
+### The purge
+
+Nothing runs by itself. An administrator (or a scheduled job signed in as one) calls `POST /api/v1/retention/purge`;
+`?dryRun=true` only counts. A real run removes everything past its period in one transaction and writes **one audit entry
+with the counts** (action `retention.purged`), or does nothing at all if it fails. An account whose applications are all
+removed in a run is left for the next run, for its own period. Run it on a schedule that suits the deployment (monthly is
+plenty) and keep an eye on the audit record (`/admin/audit`).
+
+### Closing an account
+
+An applicant can close their own account on the site (`/account/close`) or through the API (`POST /api/v1/auth/close-account`),
+after entering their password again. The name and email address are removed from the account (an opaque placeholder
+takes the address's place, because Identity needs a unique one), its password is removed, it is locked for good, every
+session and refresh token it had ends, and one audit entry (`account.closed`, no name or address in it) is written. The
+applications are kept under the periods above: they are the office's record, and they still hold the project description and the
+site address the applicant gave. An access token already issued lasts until its 15 minutes are up.
 
 ## What is not production-ready
 

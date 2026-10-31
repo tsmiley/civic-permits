@@ -45,6 +45,16 @@ public interface IAuditLog
     /// <summary>One page of entries, newest first, with the names of the accounts that acted.</summary>
     Task<PagedResponse<AuditEntryResponse>> ListAsync(int page, int pageSize, CancellationToken cancellationToken);
 }
+/// <summary>Removes what has outlived its retention period (see <see cref="RetentionPolicy"/>).</summary>
+public interface IRetentionService
+{
+    /// <summary>
+    /// Removes expired applications (with their history and inspections) and unused applicant accounts and writes one
+    /// audit entry with the counts, all or nothing; or, for a dry run, only counts them.
+    /// </summary>
+    Task<RetentionResponse> RunAsync(Guid actorId, DateTimeOffset now, bool dryRun, CancellationToken cancellationToken);
+}
+
 /// <summary>Which applications a search should return.</summary>
 /// <param name="Status">Only this status, or any.</param>
 /// <param name="ApplicantId">Only this applicant's, or anyone's.</param>

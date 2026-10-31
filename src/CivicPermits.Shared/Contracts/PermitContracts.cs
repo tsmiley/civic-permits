@@ -223,3 +223,11 @@ public sealed record AuditEntryResponse(
     string SubjectType,
     Guid? SubjectId,
     string Summary);
+
+/// <summary>What a retention purge removed, or would remove.</summary>
+/// <param name="DryRun">True when nothing was removed: these are the counts that a real run would remove now.</param>
+/// <param name="DecidedApplications">Approved, denied or issued applications more than seven years past their last change.</param>
+/// <param name="DraftApplications">Drafts more than a year past their last change.</param>
+/// <param name="WithdrawnApplications">Withdrawn applications more than a year past their last change.</param>
+/// <param name="Accounts">Applicant accounts with no application, unused for two years.</param>
+public sealed record RetentionResponse(bool DryRun, int DecidedApplications, int DraftApplications, int WithdrawnApplications, int Accounts);

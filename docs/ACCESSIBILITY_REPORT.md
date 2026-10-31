@@ -1,6 +1,6 @@
 # Accessibility report
 
-**Status in one paragraph.** Civic Permits is built and tested against WCAG 2.1 level AA. The 54 page states listed in
+**Status in one paragraph.** Civic Permits is built and tested against WCAG 2.1 level AA. The 57 page states listed in
 section 1 (the pages of the site, in the states a test could reach, as each kind of person who can reach them) pass the
 axe-core automated rules with no violation; a state not on that list has not been scanned. A set of scripted browser
 tests covers the things automated rules cannot
@@ -19,8 +19,8 @@ installed stable channel on the development machine), with its real content secu
 
 | Group | States scanned with axe-core |
 |---|---|
-| Public (13) | home; permits; lookup (empty, not found, found); sign in (plain, after registering, wrong password); register (plain, nothing entered, weak password); page not found; status 429 page |
-| Applicant (17) | my applications; choose a permit (plain, nothing chosen); project details (plain, everything missing); a draft; change a draft (plain, a problem); an application that is approved with an inspection booked, issued, approved and paid, submitted, denied, in review, sent back for corrections, withdrawn; the "not allowed" (403) page |
+| Public (14) | home; permits; lookup (empty, not found, found); sign in (plain, after registering, wrong password); register (plain, nothing entered, weak password); page not found; status 429 page; account closed |
+| Applicant (19) | my applications; choose a permit (plain, nothing chosen); project details (plain, everything missing); a draft; change a draft (plain, a problem); an application that is approved with an inspection booked, issued, approved and paid, submitted, denied, in review, sent back for corrections, withdrawn; the "not allowed" (403) page; close my account (plain, wrong password) |
 | Staff and inspector (13) | all applications; filtered by status; a submitted application (start review); in review (approve, deny, ask for changes; deny without a reason); approved and unpaid with an inspection booked; approved with a failed inspection (book another; booking in the past); approved and paid (issue); issued; an inspector's list; recording a result (plain, without a choice) |
 | Administrator (5) | permit types; add a permit type (plain, everything missing); change a permit type; the audit record |
 | 320 px screen (6) | home; permits; lookup; sign in; the clerk's list; an application |
@@ -40,7 +40,7 @@ spacing overrides; and no console error or failed request.
 
 ## 2. Results
 
-- **axe-core:** 0 violations in 54 states.
+- **axe-core:** 0 violations in 57 states.
 - **Scripted tests:** all pass (see the test run for the current count).
 - **Defects found by this testing and fixed** (each has a test that fails without the fix):
   1. *In-page links went to the home page.* The document has a `<base href="/">`, so `#main` and `#field` resolved
@@ -60,7 +60,7 @@ spacing overrides; and no console error or failed request.
 
 How to read the status column:
 
-- **Automated**: an axe rule covers it and passes in all 54 states.
+- **Automated**: an axe rule covers it and passes in all 57 states.
 - **Scripted**: a written browser test covers it (named in the notes).
 - **Designed**: built in and reviewed in code and markup, but only a person with assistive technology can confirm it;
   the check is in the manual procedure and has **not yet been done**.
@@ -88,7 +88,7 @@ and verified by nothing yet except review; 1 is a known gap.
 | 1.3.5 | Identify Input Purpose | AA | Automated | `autocomplete` tokens on the sign-in and register fields (`username`, `current-password`, `new-password`, `name`, `email`); axe `autocomplete-valid`. Site-address fields are not the person's own details and carry none. |
 | 1.4.1 | Use of Color | A | Scripted, Designed | Status is always written ("Approved"); errors carry text and a heavier border; links are underlined; the current navigation item is bold and marked `aria-current`. axe `link-in-text-block` passes. |
 | 1.4.2 | Audio Control | A | Not applicable | No audio. |
-| 1.4.3 | Contrast (Minimum) | AA | Automated | axe `color-contrast` passes in all 54 states; ratios are also computed with the WCAG formula and written beside each colour in `app.css` (text 8:1 or better; focus ring 4.7:1). |
+| 1.4.3 | Contrast (Minimum) | AA | Automated | axe `color-contrast` passes in all 57 states; ratios are also computed with the WCAG formula and written beside each colour in `app.css` (text 8:1 or better; focus ring 4.7:1). |
 | 1.4.4 | Resize Text | AA | Scripted | `Text_can_be_enlarged_to_200_percent_without_losing_content`; axe `meta-viewport` passes (zoom is not blocked). |
 | 1.4.5 | Images of Text | AA | Designed | No images of text. |
 | 1.4.10 | Reflow | AA | Scripted | `Public_pages_reflow_to_a_320_pixel_screen...`, `Signed_in_pages_with_tables_reflow...`, and the 320 px axe sweep. Tables scroll inside their own focusable region, which the criterion allows for data tables. |

@@ -28,6 +28,17 @@ internal static class PermitEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapPost("/retention/purge", async (bool? dryRun, IDispatcher dispatcher, CancellationToken cancel) =>
+                TypedResults.Ok(await dispatcher.SendAsync(new PurgeExpiredRecordsCommand(dryRun ?? false), cancel)))
+            .RequireAuthorization(Policies.Administrator)
+            .WithTags("Retention")
+            .WithName("PurgeExpiredRecords")
+            .WithSummary("Removes what has outlived its retention period. Administrators only.")
+            .WithDescription("Decided applications are kept 7 years after their last change; drafts and withdrawn applications 1 year; applicant accounts with no application 2 years after their last sign-in. An application in progress is never removed by age. Add dryRun=true to count without removing. A real run writes one audit entry with the counts.")
+            .Produces<RetentionResponse>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden);
+
         group.MapGet("/inspectors", async (IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new ListInspectorsQuery(), cancel)))
             .RequireAuthorization(Policies.Staff)
