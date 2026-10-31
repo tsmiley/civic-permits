@@ -51,7 +51,7 @@ rest of the sweep on every push.
   variables. A secret scan runs over the full history before the repository is made public.
 - **No real people or data.** Sample data is fictional and generated; it is never a real person, address, email
   or customer.
-- **Dependencies:** MIT, Apache-2.0 or BSD only, each listed in `NOTICE`. A vulnerable package fails the build.
+- **Dependencies:** MIT, Apache-2.0 or BSD, apart from the reviewed exceptions listed in `NOTICE`; every package is listed there. A vulnerable package fails the build.
 - **Accessibility is a requirement, not a polish step.** A page is not done until it is keyboard-operable, labelled,
   and passes the automated checks.
 - **Claims are tested.** The documentation says "tested against WCAG 2.1 AA", never "compliant" or "certified",

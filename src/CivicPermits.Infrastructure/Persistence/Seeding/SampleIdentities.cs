@@ -2,8 +2,8 @@ namespace CivicPermits.Infrastructure.Persistence.Seeding;
 
 /// <summary>
 /// The fixed identifiers the sample data uses for its people. They are bare ids: the sample data names no one,
-/// holds no email address and sets no password. A later slice creates demonstration sign-ins for these ids from
-/// configuration, never from a value written in the repository.
+/// holds no email address and sets no password. `IdentityBootstrapper` creates demonstration sign-ins for these ids when
+/// the sample data is loaded, with a password taken from configuration at run time, never from a value written in the repository.
 /// </summary>
 public static class SampleIdentities
 {

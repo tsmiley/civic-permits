@@ -25,7 +25,7 @@ public static class HostingExtensions
         // The server name and version help only someone choosing which known flaw to try.
         builder.Services.Configure<KestrelServerOptions>(kestrel => kestrel.AddServerHeader = false);
 
-        // The rulebook's value is two years and every subdomain (Strict-Transport-Security: max-age=63072000; includeSubDomains);
+        // The security baseline's value (docs/THREAT_MODEL.md) is two years and every subdomain (Strict-Transport-Security: max-age=63072000; includeSubDomains);
         // the framework's default is thirty days for the one host. No preload: that is a public, hard-to-undo commitment.
         builder.Services.AddHsts(hsts =>
         {

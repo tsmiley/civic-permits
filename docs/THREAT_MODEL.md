@@ -23,6 +23,19 @@ at each release.
 | Staff or inspector | An account | Act beyond their role; act on others' behalf |
 | Anyone with a link | Can make a signed-in person's browser send a request | Make a person do something they did not intend |
 
+## The security baseline
+
+Some numbers in this project come from a written baseline rather than from the framework's defaults. They are stated once, here,
+with where each comes from, so a reader can check them and a change to one is a change to this table.
+
+| What | The baseline | Where it comes from |
+|---|---|---|
+| Strict-Transport-Security | `max-age=63072000; includeSubDomains` (two years, every subdomain), no `preload` | The two-year value with subdomains is what [Mozilla's web security guidelines](https://infosec.mozilla.org/guidelines/web_security) recommend; `preload` is left out because it is a public commitment that is hard to undo |
+| Password hashing | PBKDF2-HMAC-SHA512 with at least 220,000 iterations (the project uses 250,000) | The [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) gives 210,000 for this algorithm; the project's floor is a little above it, and ASP.NET Core Identity's own default is 100,000 |
+| Passwords | At least 15 characters, no composition rules, spaces and 64 or more characters accepted, a blocklist of common passwords | [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html) |
+| Response headers | A content security policy, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-site`, `X-Permitted-Cross-Domain-Policies: none`, and no `Server` header | The [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/) |
+| Runtime | ASP.NET Core 10.0.7 or later outside Development | The release that fixed GHSA-9mv3-2cwr-p262, which let authentication cookies be forged on hosts that are not Windows |
+
 ## Threats and what is done
 
 | Threat | What is done | Evidence |

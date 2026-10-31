@@ -19,7 +19,7 @@ public class HardeningTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static readonly string[] RulebookHeaders =
+    private static readonly string[] SecurityHeaders =
     [
         "Content-Security-Policy", "X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy",
         "Permissions-Policy", "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy", "X-Permitted-Cross-Domain-Policies",
@@ -46,7 +46,7 @@ public class HardeningTests
 
     private static void AssertEveryHeader(HttpResponseMessage response, string where)
     {
-        foreach (string header in RulebookHeaders)
+        foreach (string header in SecurityHeaders)
         {
             Assert.True(response.Headers.Contains(header), $"{where}: the {header} header is missing.");
         }
@@ -64,7 +64,7 @@ public class HardeningTests
     // ---- Headers and caching ----
 
     [Fact]
-    public async Task Every_rulebook_header_is_on_a_success_a_refusal_and_a_miss()
+    public async Task Every_security_header_is_on_a_success_a_refusal_and_a_miss()
     {
         using SeededApi api = new();
         using HttpClient anonymous = api.Anonymous();

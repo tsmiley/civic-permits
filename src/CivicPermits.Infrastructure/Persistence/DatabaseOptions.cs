@@ -31,7 +31,7 @@ public sealed class DatabaseOptions
     public bool SeedSampleData { get; set; }
 
     /// <summary>
-    /// The password for the sample sign-ins, at least twelve characters. Supplied by an environment variable or user
+    /// The password for the sample sign-ins, at least fifteen characters. Supplied by an environment variable or user
     /// secrets (<c>Database__SampleUserPassword</c>), never written into a file in the repository. When it is not
     /// set, the sample data is loaded without any sign-ins.
     /// </summary>

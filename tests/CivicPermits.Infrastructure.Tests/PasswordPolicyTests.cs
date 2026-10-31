@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CivicPermits.Infrastructure.Tests;
 
-/// <summary>NIST SP 800-63B-4 as the rulebook adopts it: length and a blocklist, no composition rules, a strong hash.</summary>
+/// <summary>NIST SP 800-63B-4 as the project's security baseline adopts it: length and a blocklist, no composition rules, a strong hash.</summary>
 public class PasswordPolicyTests
 {
     private static ServiceProvider BuildProvider(SqliteTestDatabase database)
@@ -46,7 +46,7 @@ public class PasswordPolicyTests
         Assert.Equal(1, hash[0]);
         Assert.Equal(2u, BinaryPrimitives.ReadUInt32BigEndian(hash.AsSpan(1, 4))); // Identity's code for HMAC-SHA512 (0 is SHA1, 1 is SHA256)
         Assert.Equal((uint)PasswordPolicy.IterationCount, BinaryPrimitives.ReadUInt32BigEndian(hash.AsSpan(5, 4)));
-        Assert.True(PasswordPolicy.IterationCount >= 220_000, "The rulebook's floor is 220,000 iterations.");
+        Assert.True(PasswordPolicy.IterationCount >= 220_000, "The security baseline's floor is 220,000 iterations.");
     }
 
     [Fact]

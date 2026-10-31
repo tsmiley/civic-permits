@@ -7,7 +7,7 @@ public sealed record LoginRequest(string? Email, string? Password);
 
 /// <summary>What a person sends to make an applicant account.</summary>
 /// <param name="Email">The email address to register.</param>
-/// <param name="Password">A password of at least twelve characters.</param>
+/// <param name="Password">A password of at least fifteen characters.</param>
 /// <param name="DisplayName">The name shown on correspondence.</param>
 public sealed record RegisterRequest(string? Email, string? Password, string? DisplayName);
 
