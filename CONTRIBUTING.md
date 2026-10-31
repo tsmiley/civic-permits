@@ -40,7 +40,7 @@ It looks through every commit on every branch, every commit message and every fi
 addresses and telephone numbers, files that must never be committed (databases, certificates, key and environment files),
 private names and the identity of every author and committer (only no-reply addresses are allowed). It never prints what it
 matched, only the rule and the place. The list of private names is kept **outside** the repository, because publishing the
-list would publish the names; without it that one check is skipped and the sweep says so. CI runs the self-test and the
+list would publish the names; without it that one check is skipped and the sweep says so. A finding that sits in history that is already public cannot be removed, so a second list outside the repository (`-AcceptedFile`) can name such findings exactly as the sweep prints them; they are counted and shown as accepted, and anything not on the list still fails. CI runs the self-test and the
 rest of the sweep on every push.
 
 ## Rules

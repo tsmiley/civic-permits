@@ -26,6 +26,12 @@
     A text file with one private name per line (lines starting with # are comments). Defaults to the environment variable
     CP_SWEEP_NAMES_FILE. Without one the name check is skipped, and the sweep says so.
 
+.PARAMETER AcceptedFile
+    A text file listing findings that are known and accepted, one per line, exactly as the sweep prints them (`rule | where`).
+    Defaults to the environment variable CP_SWEEP_ACCEPTED_FILE. It exists for the history of a public repository, which cannot be
+    rewritten: a name that was fine when a commit was made and is not now stays in that commit for good. Accepted findings are
+    counted and shown as accepted, never hidden; a finding that is not listed still fails. Keep the file outside the repository.
+
 .PARAMETER SelfTest
     Run the self-test instead of sweeping this repository.
 
@@ -38,6 +44,7 @@
 [CmdletBinding()]
 param(
     [string]$NamesFile = $env:CP_SWEEP_NAMES_FILE,
+    [string]$AcceptedFile = $env:CP_SWEEP_ACCEPTED_FILE,
     [switch]$SelfTest
 )
 
@@ -209,10 +216,27 @@ function Invoke-SelfTest {
         Invoke-Git $root @('rm', '-q', 'oops.txt') | Out-Null
         Invoke-Git $root @('commit', '-q', '-m', 'Remove the secret again, which leaves it in history') | Out-Null
 
-        # A commit by someone with a real-looking address.
+        # Each of the next defects is placed where only ONE part of the sweep can see it, so removing that part is noticed.
+        # 1. A credential in a commit message and nowhere else (only the message pass reads it).
         Set-Content -LiteralPath (Join-Path $root 'extra.txt') -Value 'nothing special'
         Invoke-Git $root @('add', '-A') | Out-Null
-        Invoke-Git $root @('-c', 'user.email=person@mail-provider.example.net', 'commit', '-q', '-m', 'By a personal address') | Out-Null
+        Invoke-Git $root @('commit', '-q', '-m', ('Rotate the key ' + 'sk' + '_live_' + 'zyxwvutsrqponm9876')) | Out-Null
+
+        # 2. A credential and a personal author address that exist only on a second branch that is not checked out
+        #    (only the passes that read every branch, not just the current one, see them).
+        Invoke-Git $root @('checkout', '-q', '-b', 'side') | Out-Null
+        Set-Content -LiteralPath (Join-Path $root 'side-only.txt') -Value ('token = ghp' + '_' + ('Z9y8X7w6' * 5))
+        Invoke-Git $root @('add', '-A') | Out-Null
+        Invoke-Git $root @('-c', 'user.email=person@mail-provider.example.net', 'commit', '-q', '-m', 'On the other branch') | Out-Null
+        Invoke-Git $root @('checkout', '-q', 'main') | Out-Null
+
+        # 3. A file that was never added, with a defect in it, and a key file that was never added (only the tree pass,
+        #    reading untracked files, sees them).
+        Set-Content -LiteralPath (Join-Path $root 'untracked-note.txt') -Value ('call 316' + '-555-0199 tonight')
+        Set-Content -LiteralPath (Join-Path $root 'untracked.pem') -Value 'not really a key'
+
+        # 4. A defect added to a tracked file and not committed (only the tree pass sees it, and only at its line).
+        Add-Content -LiteralPath (Join-Path $root 'readme.txt') -Value ('old = AKIA' + 'QWERTYUIOPASDFGH')
 
         $found = @(Invoke-Sweep $root $names)
         $missing = @()
@@ -220,17 +244,27 @@ function Invoke-SelfTest {
             if (-not ($found | Where-Object { $_.StartsWith("$id |") })) { $missing += $id }
         }
 
-        foreach ($expected in @('forbidden-file | server.pfx', 'author-or-committer-not-a-no-reply-address | history')) {
-            if (-not ($found | Where-Object { $_.StartsWith($expected) })) { $missing += $expected }
+        # Each expectation names the rule AND where it must be reported.
+        $expectations = [ordered]@{
+            'a secret removed again but still in history'          = 'cloud-access-key | oops.txt (commit '
+            'a forbidden file in the history'                      = 'forbidden-file | server.pfx (commit '
+            'a forbidden file in the working tree'                 = 'forbidden-file | server.pfx (working tree)'
+            'a credential in a commit message only'                = 'payment-key | message of commit '
+            'a credential only on another branch'                  = 'github-token | side-only.txt (commit '
+            'a personal author address only on another branch'     = 'author-or-committer-not-a-no-reply-address | history'
+            'a defect in an untracked file'                        = 'telephone-number | untracked-note.txt:1'
+            'an untracked key file'                                = 'forbidden-file | untracked.pem (working tree)'
+            'an uncommitted change to a tracked file'              = 'cloud-access-key | readme.txt:6'
         }
 
-        if (-not ($found | Where-Object { $_ -like 'cloud-access-key | oops.txt (commit *' })) { $missing += 'a secret removed again but still in history' }
+        foreach ($pair in $expectations.GetEnumerator()) {
+            if (-not ($found | Where-Object { $_.StartsWith($pair.Value) })) { $missing += $pair.Key }
+        }
 
-        if ($missing.Count -gt 0) { throw "The self-test failed: the sweep did not report: $($missing -join ', ')" }
+        if ($missing.Count -gt 0) { throw "The self-test failed: the sweep did not report: $($missing -join '; ')" }
 
-        Write-Host "Self-test passed: $($planted.Count) planted defects, a forbidden file, a secret that survives only in history and a personal author address were all found, and a clean repository found nothing."
-    }
-    finally {
+        Write-Host "Self-test passed: $($planted.Count) planted defects, each of the nine places only one part of the sweep can see (history, a message, another branch, the tree, an untracked file, an uncommitted change) and a personal author address were all found, and a clean repository found nothing."
+    }    finally {
         if (Test-Path -LiteralPath $root) {
             # Git marks its object files read-only on some systems.
             Get-ChildItem -LiteralPath $root -Recurse -Force | ForEach-Object { try { $_.Attributes = 'Normal' } catch { $null = $_ } }
@@ -257,9 +291,16 @@ else {
 }
 
 $results = @(Invoke-Sweep $repository $privateNames)
+$accepted = if ([string]::IsNullOrWhiteSpace($AcceptedFile)) { @() } else { @(Get-Content -LiteralPath $AcceptedFile | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') }) }
+$knownCount = @($results | Where-Object { $accepted -contains $_ }).Count
+$results = @($results | Where-Object { $accepted -notcontains $_ })
+
+if ($knownCount -gt 0) {
+    Write-Host "Accepted findings: $knownCount (listed in the accepted file; they are in history that cannot be rewritten)."
+}
 
 if ($results.Count -eq 0) {
-    Write-Host 'Publication sweep: nothing found in the history or the working tree.'
+    Write-Host 'Publication sweep: nothing new found in the history or the working tree.'
     exit 0
 }
 
