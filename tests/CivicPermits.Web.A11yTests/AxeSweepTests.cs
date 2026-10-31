@@ -3,7 +3,7 @@ using Microsoft.Playwright;
 namespace CivicPermits.Web.A11yTests;
 
 /// <summary>
-/// The axe-core sweep: the 53 page states listed in docs/ACCESSIBILITY_REPORT.md (the pages of the site in the states
+/// The axe-core sweep: the 54 page states listed in docs/ACCESSIBILITY_REPORT.md (the pages of the site in the states
 /// and as the kinds of person named there). A test collects the violations from all its states and reports them together.
 /// </summary>
 /// <remarks>
@@ -257,7 +257,14 @@ public class AxeSweepTests(SiteFixture site) : IClassFixture<SiteFixture>
         await admin.Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Name = "Change Block party permit", Level = 1 }).WaitForAsync();
         await sweep.ScanAsync(admin.Page, "admin: change a permit type");
 
-        Assert.Equal(4, sweep.StatesScanned);
+        // Saving without a change still writes an audit entry, so the record is scanned with something in it.
+        await SubmitAsync(admin.Page, "Save changes");
+        await admin.Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Name = "Permit types", Level = 1 }).WaitForAsync();
+        await admin.GoAsync("/admin/audit");
+        await admin.Page.GetByRole(AriaRole.Cell, new PageGetByRoleOptions { Name = "permit_type.revised" }).First.WaitForAsync();
+        await sweep.ScanAsync(admin.Page, "admin: audit record");
+
+        Assert.Equal(5, sweep.StatesScanned);
         sweep.AssertClean();
         Assert.Empty(admin.Problems);
     }

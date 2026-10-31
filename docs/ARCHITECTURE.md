@@ -132,7 +132,21 @@ erDiagram
         string Status
         string Notes
     }
+    AuditEntries {
+        guid Id PK
+        datetime OccurredOn
+        guid ActorId "an Identity user id, no foreign key"
+        string Action "such as permit_type.created"
+        string SubjectType
+        guid SubjectId "optional"
+        string Summary "what changed, in plain words"
+    }
 ```
+
+`AuditEntries` is the audit record: one line for each change to a permit type (and, later, each retention purge and
+account closing), written in the same save as the change, only ever added to, and readable by administrators alone
+(`GET /api/v1/audit` and the `/admin/audit` page). It has no relation to the other tables on purpose, so a record outlives
+what it describes.
 
 The Identity tables (users, roles, role assignments) sit beside these. The four roles are `Applicant`, `Clerk`,
 `Inspector` and `Administrator`, spelled exactly as the domain's `ActorRole`, so a role claim maps straight onto the

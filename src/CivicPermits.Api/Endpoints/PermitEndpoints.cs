@@ -16,6 +16,18 @@ internal static class PermitEndpoints
         MapApplications(group.MapGroup("/applications").WithTags("Applications"));
         MapPublic(group.MapGroup("/public").WithTags("Public"));
 
+        group.MapGet("/audit", async (int? page, int? pageSize, IDispatcher dispatcher, CancellationToken cancel) =>
+                TypedResults.Ok(await dispatcher.SendAsync(new ListAuditQuery(page ?? 1, pageSize ?? 50), cancel)))
+            .RequireAuthorization(Policies.Administrator)
+            .WithTags("Audit")
+            .WithName("ListAudit")
+            .WithSummary("Reads the audit record, newest first. Administrators only, and read only.")
+            .WithDescription("Every change to a permit type, and every retention purge and account closing, with who did it, when, and what changed. There is no way to add to, change or remove an entry through the API.")
+            .Produces<PagedResponse<AuditEntryResponse>>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
         group.MapGet("/inspectors", async (IDispatcher dispatcher, CancellationToken cancel) =>
                 TypedResults.Ok(await dispatcher.SendAsync(new ListInspectorsQuery(), cancel)))
             .RequireAuthorization(Policies.Staff)

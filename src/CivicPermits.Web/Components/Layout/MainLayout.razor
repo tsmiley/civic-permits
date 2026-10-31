@@ -16,6 +16,7 @@
                     @if (context.User.IsInRole("Administrator"))
                     {
                         <li><a href="/admin/permit-types" aria-current="@Current("/admin/permit-types")">Permit types</a></li>
+                        <li><a href="/admin/audit" aria-current="@Current("/admin/audit")">Audit record</a></li>
                     }
                     <li><a href="/account/logout">Sign out<span class="visually-hidden"> of @context.User.Identity?.Name</span></a></li>
                 </Authorized>

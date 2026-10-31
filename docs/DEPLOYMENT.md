@@ -108,7 +108,12 @@ This list is the point of this page.
 - **No payment.** The fee is recorded as paid by a clerk at the counter. No card input exists, by design.
 - **One database, one writer pattern.** The design is correct for several instances (concurrency on applications and
   permit numbers is guarded in the database; permit-type edits are last-write-wins), but it has only been run as one.
-- **No multi-factor sign-in, and no audit log beyond each application's own history.**
+- **No breached-password check.** The password blocklist is bundled and small. A deployment that wants more should add a
+  breached-password service as a second password validator; that is a network call and a choice for the deployment.
+- **No multi-factor sign-in, and an audit record that is not tamper-proof.** Each application has its own history and
+  permit-type changes have the audit record (`/admin/audit`), but the program only adds to it: someone with write access to
+  the database could edit it. Sign-ins are not recorded. Making the record append-only at the database level, or shipping it
+  somewhere the application cannot write, is up to the deployment.
 - **Session ends silently after 8 hours** without activity ([accessibility report, 2.2.1](ACCESSIBILITY_REPORT.md)).
 - **Times are UTC.** The town's time zone is not used.
 - **No document upload.** Applications carry a description, not plans or attachments.

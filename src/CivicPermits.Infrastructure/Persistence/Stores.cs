@@ -1,5 +1,6 @@
 using CivicPermits.Application.Abstractions;
 using CivicPermits.Domain.Applications;
+using CivicPermits.Domain.Common;
 using CivicPermits.Domain.Permits;
 using CivicPermits.Shared.Contracts;
 using Microsoft.AspNetCore.Identity;
@@ -189,5 +190,44 @@ internal sealed class UserDirectory(UserManager<ApplicationUser> users) : IUserD
         return [.. inspectors
             .OrderBy(person => person.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .Select(person => new InspectorResponse(person.Id, person.DisplayName))];
+    }
+}
+
+internal sealed class AuditLog(CivicPermitsDbContext database) : IAuditLog
+{
+    /// <summary>What to show for an account whose name has been removed when it was closed.</summary>
+    private const string ClosedAccountName = "(closed account)";
+
+    public void Add(AuditEntry entry) => database.AuditEntries.Add(entry);
+
+    public async Task<PagedResponse<AuditEntryResponse>> ListAsync(int page, int pageSize, CancellationToken cancellationToken)
+    {
+        int total = await database.AuditEntries.CountAsync(cancellationToken);
+
+        List<AuditEntry> entries = await database.AuditEntries.AsNoTracking()
+            .OrderByDescending(entry => entry.OccurredOn)
+            .ThenByDescending(entry => entry.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        List<Guid> actors = [.. entries.Select(entry => entry.ActorId).Distinct()];
+        Dictionary<Guid, string> names = await database.Users.AsNoTracking()
+            .Where(user => actors.Contains(user.Id))
+            .ToDictionaryAsync(user => user.Id, user => user.DisplayName, cancellationToken);
+
+        return new PagedResponse<AuditEntryResponse>(
+            [.. entries.Select(entry => new AuditEntryResponse(
+                entry.Id,
+                entry.OccurredOn,
+                entry.ActorId,
+                names.TryGetValue(entry.ActorId, out string? name) && !string.IsNullOrWhiteSpace(name) ? name : ClosedAccountName,
+                entry.Action,
+                entry.SubjectType,
+                entry.SubjectId,
+                entry.Summary))],
+            page,
+            pageSize,
+            total);
     }
 }

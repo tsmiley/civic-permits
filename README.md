@@ -23,7 +23,7 @@ private project.** The town, people, addresses and permits in the sample data ar
 - **A domain that can be read.** The permit office's rules live in a project that depends on nothing, and the whole
   process is one table that tests check against an independent statement of the rules
   ([architecture](docs/ARCHITECTURE.md), [decisions](docs/adr/README.md)).
-- **Accessibility as the feature, with honest claims.** Built and tested against WCAG 2.1 AA; the 53 page states
+- **Accessibility as the feature, with honest claims.** Built and tested against WCAG 2.1 AA; the 54 page states
   listed in the report pass the axe-core rules; scripted browser tests cover keyboard, focus, reflow and spacing. It says plainly
   what has *not* been done: no manual screen-reader run is recorded and nothing is certified
   ([report](docs/ACCESSIBILITY_REPORT.md), [procedure](docs/ACCESSIBILITY_TESTING.md)).

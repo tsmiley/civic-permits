@@ -204,3 +204,22 @@ public sealed record PublicPermitStatusResponse(
 /// <param name="Id">The person's identifier.</param>
 /// <param name="DisplayName">The name shown in lists.</param>
 public sealed record InspectorResponse(Guid Id, string DisplayName);
+
+/// <summary>One line of the audit record, as an administrator reads it.</summary>
+/// <param name="Id">The identifier.</param>
+/// <param name="OccurredOn">When it happened, in UTC.</param>
+/// <param name="ActorId">The account that did it.</param>
+/// <param name="ActorName">That account's name, or a note that the account has been closed.</param>
+/// <param name="Action">A stable code for what was done, such as <c>permit_type.created</c>.</param>
+/// <param name="SubjectType">The kind of thing it was done to.</param>
+/// <param name="SubjectId">Which one, if it was one.</param>
+/// <param name="Summary">What changed, in plain words.</param>
+public sealed record AuditEntryResponse(
+    Guid Id,
+    DateTimeOffset OccurredOn,
+    Guid ActorId,
+    string ActorName,
+    string Action,
+    string SubjectType,
+    Guid? SubjectId,
+    string Summary);

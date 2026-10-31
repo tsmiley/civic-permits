@@ -25,7 +25,7 @@ public sealed record SavePermitTypeCommand(Guid? Id, PermitTypeRequest Request) 
 /// <param name="Active">True to open it, false to close it.</param>
 public sealed record SetPermitTypeActiveCommand(Guid Id, bool Active) : IRequest<PermitTypeResponse>;
 
-internal sealed class PermitTypeHandlers(IPermitTypeStore types, ICurrentUser user, IUnitOfWork work) :
+internal sealed class PermitTypeHandlers(IPermitTypeStore types, IAuditLog audit, ICurrentUser user, IUnitOfWork work, TimeProvider time) :
     IRequestHandler<ListPermitTypesQuery, IReadOnlyList<PermitTypeResponse>>,
     IRequestHandler<GetPermitTypeQuery, PermitTypeResponse>,
     IRequestHandler<SavePermitTypeCommand, PermitTypeResponse>,
@@ -52,7 +52,7 @@ internal sealed class PermitTypeHandlers(IPermitTypeStore types, ICurrentUser us
 
     public async ValueTask<PermitTypeResponse> HandleAsync(SavePermitTypeCommand request, CancellationToken cancellationToken)
     {
-        user.Require(ActorRole.Administrator);
+        Actor administrator = user.Require(ActorRole.Administrator);
         PermitTypeRequest values = request.Request;
 
         PermitCategory category = Enum.TryParse(values.Category, ignoreCase: true, out PermitCategory parsed) && Enum.IsDefined(parsed)
@@ -60,11 +60,13 @@ internal sealed class PermitTypeHandlers(IPermitTypeStore types, ICurrentUser us
             : throw Access.Invalid("permit_type.category", "Choose a permit category: Building, Sign, Event or Vendor.");
 
         PermitType type;
+        AuditSummaries.Values? before = null;
 
         if (request.Id is { } id)
         {
             type = await types.FindAsync(id, cancellationToken)
                 ?? throw RequestException.NotFound(NotFoundCode, NotFoundMessage);
+            before = AuditSummaries.Values.Of(type);
             type.Revise(category, values.Name, values.Description, new Money(values.BaseFeeCents), values.ValuationRateBasisPoints, values.RequiresInspection, values.ValidityDays, values.TargetReviewDays);
         }
         else
@@ -82,6 +84,17 @@ internal sealed class PermitTypeHandlers(IPermitTypeStore types, ICurrentUser us
             types.Add(type);
         }
 
+        // Written with the change and in the same save, so the record and the change stand or fall together, and a
+        // request that was refused above leaves no entry.
+        audit.Add(AuditEntry.Record(
+            Guid.CreateVersion7(),
+            time.GetUtcNow(),
+            administrator.Id,
+            before is null ? "permit_type.created" : "permit_type.revised",
+            nameof(PermitType),
+            type.Id,
+            before is { } old ? AuditSummaries.Revised(old, type) : AuditSummaries.Created(type)));
+
         await work.SaveChangesAsync(cancellationToken);
 
         return type.ToResponse();
@@ -89,10 +102,11 @@ internal sealed class PermitTypeHandlers(IPermitTypeStore types, ICurrentUser us
 
     public async ValueTask<PermitTypeResponse> HandleAsync(SetPermitTypeActiveCommand request, CancellationToken cancellationToken)
     {
-        user.Require(ActorRole.Administrator);
+        Actor administrator = user.Require(ActorRole.Administrator);
 
         PermitType type = await types.FindAsync(request.Id, cancellationToken)
             ?? throw RequestException.NotFound(NotFoundCode, NotFoundMessage);
+        bool wasOpen = type.IsActive;
 
         if (request.Active)
         {
@@ -102,6 +116,15 @@ internal sealed class PermitTypeHandlers(IPermitTypeStore types, ICurrentUser us
         {
             type.Deactivate();
         }
+
+        audit.Add(AuditEntry.Record(
+            Guid.CreateVersion7(),
+            time.GetUtcNow(),
+            administrator.Id,
+            request.Active ? "permit_type.opened" : "permit_type.closed",
+            nameof(PermitType),
+            type.Id,
+            request.Active ? AuditSummaries.Opened(type, wasOpen) : AuditSummaries.Closed(type, wasOpen)));
 
         await work.SaveChangesAsync(cancellationToken);
 

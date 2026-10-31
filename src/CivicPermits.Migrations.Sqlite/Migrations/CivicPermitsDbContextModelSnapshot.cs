@@ -201,6 +201,42 @@ namespace CivicPermits.Migrations.Sqlite.Migrations
                     b.ToTable("StatusChanges", (string)null);
                 });
 
+            modelBuilder.Entity("CivicPermits.Domain.Common.AuditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurredOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredOn", "Id");
+
+                    b.ToTable("AuditEntries", (string)null);
+                });
+
             modelBuilder.Entity("CivicPermits.Domain.Permits.PermitType", b =>
                 {
                     b.Property<Guid>("Id")
